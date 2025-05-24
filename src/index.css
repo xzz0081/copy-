@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 20 20 20;
+  --foreground: 240 240 240;
+  --card: 35 35 35;
+  --card-foreground: 240 240 240;
+  --popover: 35 35 35;
+  --popover-foreground: 240 240 240;
+  --primary: 14 165 233;
+  --primary-foreground: 240 249 255;
+  --secondary: 139 92 246;
+  --secondary-foreground: 245 243 255;
+  --muted: 41 41 41;
+  --muted-foreground: 161 161 170;
+  --accent: 41 41 41;
+  --accent-foreground: 240 240 240;
+  --destructive: 239 68 68;
+  --destructive-foreground: 254 242 242;
+  --border: 55 55 55;
+  --input: 55 55 55;
+  --ring: 0 0 0;
+  --radius: 0.5rem;
+}
+
+body {
+  @apply bg-background-dark text-gray-200 antialiased;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700 focus-visible:ring-primary-500;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary-600 text-white hover:bg-secondary-700 focus-visible:ring-secondary-500;
+  }
+  
+  .btn-outline {
+    @apply border border-gray-700 bg-transparent hover:bg-gray-700 focus-visible:ring-gray-500;
+  }
+  
+  .btn-danger {
+    @apply bg-error-600 text-white hover:bg-error-700 focus-visible:ring-error-500;
+  }
+  
+  .btn-success {
+    @apply bg-success-600 text-white hover:bg-success-700 focus-visible:ring-success-500;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+  
+  .input {
+    @apply flex h-10 w-full rounded-md border border-gray-700 bg-background-dark px-3 py-2 text-sm ring-offset-background-dark file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  
+  .card {
+    @apply rounded-lg border border-gray-700 bg-background-card p-4 shadow-sm;
+  }
+}
