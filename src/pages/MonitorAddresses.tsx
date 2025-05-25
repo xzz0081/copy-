@@ -38,6 +38,8 @@ export default function MonitorAddresses() {
   });
   const [deletingAddress, setDeletingAddress] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [toggleStatusAddress, setToggleStatusAddress] = useState<string | null>(null);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
   useEffect(() => {
     fetchAddresses();
@@ -348,6 +350,56 @@ export default function MonitorAddresses() {
   const confirmDelete = (address: string) => {
     if (window.confirm(`确定要删除钱包地址 ${address.substring(0, 6)}...${address.substring(address.length - 4)} 的监控吗？`)) {
       handleDeleteWallet(address);
+    }
+  };
+
+  // 处理点击切换状态
+  const handleToggleStatus = async (address: string, currentStatus: boolean) => {
+    if (isTogglingStatus) return; // 防止重复操作
+    
+    // 添加确认对话框
+    const confirmMessage = currentStatus 
+      ? `确定要暂停监控钱包 ${address.substring(0, 6)}...${address.substring(address.length - 4)} 吗？` 
+      : `确定要激活监控钱包 ${address.substring(0, 6)}...${address.substring(address.length - 4)} 吗？`;
+    
+    // 对于暂停操作，必须进行确认
+    // 对于激活操作，可以直接进行
+    if (currentStatus && !window.confirm(confirmMessage)) {
+      return;
+    }
+    
+    try {
+      setToggleStatusAddress(address);
+      setIsTogglingStatus(true);
+      
+      const updateData = {
+        address,
+        ...addresses[address],
+        is_active: !currentStatus,
+      };
+
+      const response = await updateMonitorAddress(updateData);
+      
+      if (response.success) {
+        // 更新本地状态
+        setAddresses(prev => ({
+          ...prev,
+          [address]: {
+            ...prev[address],
+            is_active: !currentStatus
+          }
+        }));
+        
+        toast.success(`钱包已${!currentStatus ? '激活' : '暂停'}`);
+      } else {
+        toast.error('状态更新失败');
+      }
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      toast.error('状态更新失败');
+    } finally {
+      setToggleStatusAddress(null);
+      setIsTogglingStatus(false);
     }
   };
 
@@ -683,10 +735,23 @@ export default function MonitorAddresses() {
                             </label>
                           </div>
                         ) : (
-                          <StatusBadge
-                            status={config.is_active ? 'success' : 'neutral'}
-                            text={config.is_active ? '活跃' : '暂停'}
-                          />
+                          <div 
+                            className="cursor-pointer"
+                            onClick={() => handleToggleStatus(address, config.is_active)}
+                            title={config.is_active ? "点击暂停" : "点击激活"}
+                          >
+                            {toggleStatusAddress === address && isTogglingStatus ? (
+                              <div className="flex items-center">
+                                <Spinner size="sm" className="mr-2" />
+                                <span>{config.is_active ? '暂停中...' : '激活中...'}</span>
+                              </div>
+                            ) : (
+                              <StatusBadge
+                                status={config.is_active ? 'success' : 'error'}
+                                text={config.is_active ? '活跃' : '暂停'}
+                              />
+                            )}
+                          </div>
                         )}
                       </td>
                       <td className="px-4 py-3">
