@@ -174,6 +174,13 @@ export const addMonitorAddress = async (data: AddWalletRequest) => {
   return response.data;
 };
 
+export const deleteMonitorAddress = async (address: string) => {
+  const response = await api.delete('/monitor-addresses/delete', {
+    data: { address }
+  });
+  return response.data;
+};
+
 export const updateMonitorAddress = async (data: any) => {
   const response = await api.put('/monitor-addresses/update', data);
   return response.data;

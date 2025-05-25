@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, RefreshCw, Edit, ExternalLink, Plus, DollarSign, Clock, TrendingUp, TrendingDown, Settings } from 'lucide-react';
-import { getMonitorAddresses, updateMonitorAddress, addMonitorAddress, getSolPrice, PriceSource } from '../services/api';
+import { Search, RefreshCw, Edit, ExternalLink, Plus, DollarSign, Clock, TrendingUp, TrendingDown, Settings, Trash2 } from 'lucide-react';
+import { getMonitorAddresses, updateMonitorAddress, addMonitorAddress, getSolPrice, PriceSource, deleteMonitorAddress } from '../services/api';
 import { MonitorAddressesResponse, WalletConfig, AddWalletRequest } from '../types';
 import StatusBadge from '../components/ui/StatusBadge';
 import AddressDisplay from '../components/ui/AddressDisplay';
@@ -36,6 +36,8 @@ export default function MonitorAddresses() {
     priority_fee: 50000,
     compute_unit_limit: 200000
   });
+  const [deletingAddress, setDeletingAddress] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchAddresses();
@@ -303,6 +305,41 @@ export default function MonitorAddresses() {
         return 'CoinMarketCap';
       default:
         return 'OKX(欧易)';
+    }
+  };
+
+  // 处理删除钱包地址
+  const handleDeleteWallet = async (address: string) => {
+    try {
+      setDeletingAddress(address);
+      setIsDeleting(true);
+      
+      const response = await deleteMonitorAddress(address);
+      
+      if (response.success) {
+        toast.success('钱包地址已成功删除');
+        // 从本地状态中移除
+        setAddresses(prevAddresses => {
+          const newAddresses = { ...prevAddresses };
+          delete newAddresses[address];
+          return newAddresses;
+        });
+      } else {
+        toast.error(response.message || '删除钱包地址失败');
+      }
+    } catch (error) {
+      console.error('Error deleting wallet address:', error);
+      toast.error('删除钱包地址失败');
+    } finally {
+      setDeletingAddress(null);
+      setIsDeleting(false);
+    }
+  };
+
+  // 显示删除确认对话框
+  const confirmDelete = (address: string) => {
+    if (window.confirm(`确定要删除钱包地址 ${address.substring(0, 6)}...${address.substring(address.length - 4)} 的监控吗？`)) {
+      handleDeleteWallet(address);
     }
   };
 
@@ -709,6 +746,18 @@ export default function MonitorAddresses() {
                           </div>
                         ) : (
                           <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => confirmDelete(address)}
+                              disabled={deletingAddress === address && isDeleting}
+                              className="btn btn-sm btn-circle btn-error"
+                              title="删除"
+                            >
+                              {deletingAddress === address && isDeleting ? (
+                                <Spinner size="sm" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </button>
                             <button
                               onClick={() => startEditing(address)}
                               className="btn btn-sm btn-outline"
