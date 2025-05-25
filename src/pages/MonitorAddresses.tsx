@@ -384,6 +384,13 @@ export default function MonitorAddresses() {
                   <th className="px-4 py-2 text-left">状态</th>
                   <th className="px-4 py-2 text-left">跟单比例</th>
                   <th className="px-4 py-2 text-left">滑点</th>
+                  <th className="px-4 py-2 text-left">小费比例</th>
+                  <th className="px-4 py-2 text-left">最小价格乘数</th>
+                  <th className="px-4 py-2 text-left">最大价格乘数</th>
+                  <th className="px-4 py-2 text-left">优先费</th>
+                  <th className="px-4 py-2 text-left">计算单元限制</th>
+                  <th className="px-4 py-2 text-left">SOL最小值</th>
+                  <th className="px-4 py-2 text-left">SOL最大值</th>
                   <th className="px-4 py-2 text-left">备注</th>
                   <th className="px-4 py-2 text-right">操作</th>
                 </tr>
@@ -391,7 +398,7 @@ export default function MonitorAddresses() {
               <tbody>
                 {filteredAddresses.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan={13} className="px-4 py-8 text-center text-gray-400">
                       没有找到匹配的地址
                     </td>
                   </tr>
@@ -436,6 +443,13 @@ export default function MonitorAddresses() {
                         )}
                       </td>
                       <td className="px-4 py-3">{config.slippage_percentage}%</td>
+                      <td className="px-4 py-3">{config.tip_percentage}%</td>
+                      <td className="px-4 py-3">{config.min_price_multiplier}</td>
+                      <td className="px-4 py-3">{config.max_price_multiplier}</td>
+                      <td className="px-4 py-3">{config.priority_fee}</td>
+                      <td className="px-4 py-3">{config.compute_unit_limit}</td>
+                      <td className="px-4 py-3">{config.sol_amount_min}</td>
+                      <td className="px-4 py-3">{config.sol_amount_max}</td>
                       <td className="px-4 py-3 text-gray-400">{config.note || '无'}</td>
                       <td className="px-4 py-3 text-right">
                         {editingAddress === address ? (
