@@ -4,7 +4,6 @@ import {
   LineChart, 
   BarChart3, 
   Settings, 
-  History, 
   DollarSign, 
   Activity, 
   Menu, 
@@ -86,7 +85,6 @@ export default function Layout() {
             </div>
             <div className="mt-8 flex flex-col gap-2">
               <NavItem to="/" icon={<BarChart3 className="h-5 w-5" />} text="监控地址" />
-              <NavItem to="/transactions" icon={<History className="h-5 w-5" />} text="交易历史" />
               <NavItem to="/manual-sell" icon={<DollarSign className="h-5 w-5" />} text="手动卖出" />
               <NavItem to="/system-health" icon={<Activity className="h-5 w-5" />} text="系统健康" />
             </div>
@@ -97,7 +95,6 @@ export default function Layout() {
         <nav className="hidden w-64 border-r border-gray-700 bg-background-dark p-4 lg:block">
           <div className="flex flex-col gap-2">
             <NavItem to="/" icon={<BarChart3 className="h-5 w-5" />} text="监控地址" />
-            <NavItem to="/transactions" icon={<History className="h-5 w-5" />} text="交易历史" />
             <NavItem to="/manual-sell" icon={<DollarSign className="h-5 w-5" />} text="手动卖出" />
             <NavItem to="/system-health" icon={<Activity className="h-5 w-5" />} text="系统健康" />
           </div>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, RefreshCw, Edit, ExternalLink, Plus, DollarSign, Clock, TrendingUp, TrendingDown, Settings, Trash2 } from 'lucide-react';
-import { getMonitorAddresses, updateMonitorAddress, addMonitorAddress, getSolPrice, PriceSource, deleteMonitorAddress } from '../services/api';
-import { MonitorAddressesResponse, WalletConfig, AddWalletRequest } from '../types';
+import { Search, RefreshCw, Edit, ExternalLink, Plus, DollarSign, Clock, TrendingUp, TrendingDown, Settings, Trash2, History, X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getMonitorAddresses, updateMonitorAddress, addMonitorAddress, getSolPrice, PriceSource, deleteMonitorAddress, getTransactions } from '../services/api';
+import { MonitorAddressesResponse, WalletConfig, AddWalletRequest, Transaction, TransactionsResponse } from '../types';
 import StatusBadge from '../components/ui/StatusBadge';
 import AddressDisplay from '../components/ui/AddressDisplay';
 import Spinner from '../components/ui/Spinner';
@@ -41,6 +41,15 @@ export default function MonitorAddresses() {
   const [toggleStatusAddress, setToggleStatusAddress] = useState<string | null>(null);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
+  // 交易历史记录相关状态
+  const [showTransactionHistory, setShowTransactionHistory] = useState(false);
+  const [selectedWallet, setSelectedWallet] = useState('');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalTransactions, setTotalTransactions] = useState(0);
+
   useEffect(() => {
     fetchAddresses();
     fetchSolPrice();
@@ -68,6 +77,134 @@ export default function MonitorAddresses() {
     }
     prevPriceRef.current = solPrice;
   }, [solPrice]);
+
+  // 获取交易历史记录
+  const fetchTransactions = async (wallet: string, page: number, limit: number) => {
+    if (!wallet) return;
+    
+    try {
+      setLoadingTransactions(true);
+      const offset = (page - 1) * limit;
+      const response = await getTransactions(wallet, limit, offset) as TransactionsResponse;
+      
+      if (response.success) {
+        setTransactions(response.data);
+        setTotalTransactions(response.total);
+      } else {
+        toast.error('获取交易历史失败');
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      toast.error('获取交易历史失败');
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
+
+  // 展示交易历史记录
+  const handleShowTransactions = (address: string) => {
+    setSelectedWallet(address);
+    setCurrentPage(1);
+    fetchTransactions(address, 1, pageSize);
+    setShowTransactionHistory(true);
+  };
+
+  // 关闭交易历史记录弹窗
+  const handleCloseTransactions = () => {
+    setShowTransactionHistory(false);
+    setSelectedWallet('');
+    setTransactions([]);
+  };
+
+  // 处理分页变化
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchTransactions(selectedWallet, page, pageSize);
+  };
+
+  // 处理每页条数变化
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newSize = parseInt(e.target.value);
+    setPageSize(newSize);
+    setCurrentPage(1);
+    fetchTransactions(selectedWallet, 1, newSize);
+  };
+
+  // 导出交易历史CSV
+  const exportToCSV = () => {
+    if (transactions.length === 0) {
+      toast.error('没有可导出的数据');
+      return;
+    }
+
+    // Create CSV header row
+    const headers = [
+      '时间',
+      '类型',
+      'Token地址',
+      '数量',
+      'SOL数量',
+      '价格',
+      '预期价格',
+      '价格滑点',
+      '状态',
+      '钱包地址',
+      '签名',
+    ];
+
+    // Format transaction data for CSV
+    const data = transactions.map((tx) => [
+      tx.timestamp,
+      tx.tx_type,
+      tx.token_address,
+      tx.amount.toString(),
+      tx.sol_amount.toString(),
+      tx.price.toString(),
+      tx.expected_price.toString(),
+      tx.price_slippage.toString(),
+      tx.status,
+      tx.wallet_address,
+      tx.signature,
+    ]);
+
+    // Combine header and data rows
+    const csvContent = [headers, ...data]
+      .map((row) => row.map((cell) => `"${cell}"`).join(','))
+      .join('\n');
+
+    // Create and download the CSV file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute(
+      'download',
+      `交易历史_${selectedWallet}_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`
+    );
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success('CSV文件已导出');
+  };
+
+  // 格式化日期时间
+  const formatDatetime = (isoString: string) => {
+    try {
+      return format(new Date(isoString), 'yyyy-MM-dd HH:mm:ss');
+    } catch (error) {
+      return isoString;
+    }
+  };
+
+  // 获取交易类型文本
+  const getTransactionTypeText = (type: string) => {
+    if (type.toLowerCase().includes('buy')) return '买入';
+    if (type.toLowerCase().includes('sell')) return '卖出';
+    return type;
+  };
 
   const fetchAddresses = async () => {
     try {
@@ -402,6 +539,9 @@ export default function MonitorAddresses() {
       setIsTogglingStatus(false);
     }
   };
+
+  // 计算总页数
+  const totalPages = Math.ceil(totalTransactions / pageSize);
 
   return (
     <div className="space-y-6">
@@ -932,13 +1072,13 @@ export default function MonitorAddresses() {
                               <Edit className="mr-1 h-3 w-3" />
                               编辑
                             </button>
-                            <Link
-                              to={`/address/${address}`}
+                            <button
+                              onClick={() => handleShowTransactions(address)}
                               className="btn btn-sm btn-primary"
                             >
-                              <ExternalLink className="mr-1 h-3 w-3" />
-                              详情
-                            </Link>
+                              <History className="mr-1 h-3 w-3" />
+                              交易详情
+                            </button>
                           </div>
                         )}
                       </td>
@@ -950,6 +1090,167 @@ export default function MonitorAddresses() {
           </div>
         )}
       </div>
+
+      {/* 交易历史记录弹窗 */}
+      {showTransactionHistory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-background-dark rounded-lg shadow-xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">
+                钱包 <AddressDisplay address={selectedWallet} /> 的交易历史
+              </h2>
+              <button
+                onClick={handleCloseTransactions}
+                className="btn btn-sm btn-circle"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">每页显示:</span>
+                <select
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                  className="rounded-md border border-gray-700 bg-background-dark px-2 py-1 text-sm"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+              <button
+                onClick={exportToCSV}
+                disabled={transactions.length === 0}
+                className="btn btn-sm btn-outline"
+              >
+                <Download className="mr-2 h-3 w-3" />
+                导出 CSV
+              </button>
+            </div>
+
+            {loadingTransactions ? (
+              <div className="flex h-60 items-center justify-center">
+                <Spinner size="lg" />
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="flex h-60 flex-col items-center justify-center gap-2 text-gray-400">
+                <p className="text-lg">没有找到交易记录</p>
+                <p className="text-sm">该钱包暂无交易记录</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full table-auto">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="px-4 py-2 text-left">时间</th>
+                        <th className="px-4 py-2 text-left">类型</th>
+                        <th className="px-4 py-2 text-left">Token地址</th>
+                        <th className="px-4 py-2 text-right">数量</th>
+                        <th className="px-4 py-2 text-right">SOL数量</th>
+                        <th className="px-4 py-2 text-right">价格</th>
+                        <th className="px-4 py-2 text-center">状态</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {transactions.map((tx, index) => (
+                        <tr
+                          key={tx.signature + index}
+                          className="border-b border-gray-700 hover:bg-gray-800/50"
+                        >
+                          <td className="px-4 py-3 text-sm">
+                            {formatDatetime(tx.timestamp)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`font-medium ${tx.tx_type.toLowerCase().includes('buy') ? 'text-success-500' : 'text-error-500'}`}>
+                              {getTransactionTypeText(tx.tx_type)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <AddressDisplay address={tx.token_address} />
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono">
+                            {(tx.amount / 1000000).toLocaleString(undefined, { 
+                              minimumFractionDigits: 2, 
+                              maximumFractionDigits: 2 
+                            })}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono">
+                            {tx.sol_amount.toLocaleString(undefined, { 
+                              minimumFractionDigits: 4, 
+                              maximumFractionDigits: 4 
+                            })}
+                            <span className="text-xs text-success-500 ml-1">
+                              ({solPrice > 0 ? `$${(tx.sol_amount * solPrice).toFixed(2)}` : '$0.00'})
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex flex-col">
+                              {formatDecimal(tx.price)}
+                              <span className="text-xs text-success-500">
+                                {solPrice > 0 && (
+                                  <>
+                                    $ {formatDecimal(tx.price * solPrice)}
+                                  </>
+                                )}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <StatusBadge 
+                              status={tx.status === 'confirmed' ? 'success' : 'error'} 
+                              text={tx.status === 'confirmed' ? '成功' : '失败'} 
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex justify-center mt-4 space-x-1">
+                    <button
+                      onClick={() => handlePageChange(1)}
+                      disabled={currentPage === 1}
+                      className="btn btn-sm btn-outline"
+                    >
+                      首页
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="btn btn-sm btn-outline"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <span className="flex items-center px-3 py-1">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="btn btn-sm btn-outline"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="btn btn-sm btn-outline"
+                    >
+                      末页
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
