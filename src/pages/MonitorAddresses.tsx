@@ -50,6 +50,9 @@ export default function MonitorAddresses() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalTransactions, setTotalTransactions] = useState(0);
 
+  // 添加当前时间状态
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+
   useEffect(() => {
     fetchAddresses();
     fetchSolPrice();
@@ -61,6 +64,17 @@ export default function MonitorAddresses() {
     
     // 组件卸载时清除定时器
     return () => clearInterval(priceInterval);
+  }, []);
+
+  // 添加时间实时更新的effect
+  useEffect(() => {
+    // 每10毫秒更新一次时间
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 10);
+    
+    // 组件卸载时清除定时器
+    return () => clearInterval(timeInterval);
   }, []);
 
   useEffect(() => {
@@ -432,6 +446,11 @@ export default function MonitorAddresses() {
     return format(lastPriceUpdate, 'HH:mm:ss');
   };
 
+  // 添加格式化当前时间的函数，精确到毫秒
+  const formatCurrentTime = (): string => {
+    return format(currentTime, 'HH:mm:ss.SSS');
+  };
+
   const handlePriceSourceChange = (source: PriceSource) => {
     setPriceSource(source);
     setShowPriceSourceMenu(false);
@@ -659,7 +678,7 @@ export default function MonitorAddresses() {
               {lastPriceUpdate && (
                 <div className="flex items-center text-xs text-gray-400 ml-2">
                   <Clock className="h-3 w-3 mr-1" />
-                  <span>{formatLastUpdate()}</span>
+                  <span className="font-mono">{formatCurrentTime()}</span>
                 </div>
               )}
             </div>
