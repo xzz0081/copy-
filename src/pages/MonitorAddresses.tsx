@@ -543,6 +543,44 @@ export default function MonitorAddresses() {
   // 计算总页数
   const totalPages = Math.ceil(totalTransactions / pageSize);
 
+  // 修改计算交易盈亏的函数
+  const calculateProfit = (tx: Transaction, allTransactions: Transaction[]): { profit: number, profitPercentage: number, buyTx?: Transaction } => {
+    // 如果不是卖出交易，则没有盈亏
+    if (!tx.tx_type.toLowerCase().includes('sell')) {
+      return { profit: 0, profitPercentage: 0 };
+    }
+    
+    // 筛选该代币所有可能的买入交易
+    const buyTransactions = allTransactions.filter(t => 
+      t.token_address === tx.token_address && 
+      t.wallet_address === tx.wallet_address &&
+      t.tx_type.toLowerCase().includes('buy') &&
+      new Date(t.timestamp) < new Date(tx.timestamp)
+    );
+    
+    // 如果没有找到对应的买入交易，则无法计算盈亏
+    if (buyTransactions.length === 0) {
+      return { profit: 0, profitPercentage: 0 };
+    }
+    
+    // 找到最近的买入交易（时间上最接近当前卖出交易的）
+    const buyTx = buyTransactions.reduce((prev, curr) => {
+      const prevTime = new Date(prev.timestamp).getTime();
+      const currTime = new Date(curr.timestamp).getTime();
+      const sellTime = new Date(tx.timestamp).getTime();
+      
+      return (sellTime - currTime) < (sellTime - prevTime) ? curr : prev;
+    });
+    
+    // 计算盈亏 (卖出获得的SOL - 买入花费的SOL)
+    const profit = tx.sol_amount - buyTx.sol_amount;
+    
+    // 计算盈亏比例 ((卖出价格 - 买入价格) / 买入价格) * 100%
+    const profitPercentage = ((tx.price - buyTx.price) / buyTx.price) * 100;
+    
+    return { profit, profitPercentage, buyTx };
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1152,6 +1190,7 @@ export default function MonitorAddresses() {
                         <th className="px-4 py-2 text-right">数量</th>
                         <th className="px-4 py-2 text-right">SOL数量</th>
                         <th className="px-4 py-2 text-right">价格</th>
+                        <th className="px-4 py-2 text-center">盈亏</th>
                         <th className="px-4 py-2 text-center">状态</th>
                       </tr>
                     </thead>
@@ -1198,6 +1237,46 @@ export default function MonitorAddresses() {
                                 )}
                               </span>
                             </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {tx.tx_type.toLowerCase().includes('sell') && (
+                              (() => {
+                                const { profit, profitPercentage, buyTx } = calculateProfit(tx, transactions);
+                                const isProfitable = profit > 0;
+                                
+                                // 如果没有找到对应的买入交易
+                                if (!buyTx) {
+                                  return (
+                                    <div className="flex flex-col items-center text-gray-400 text-xs">
+                                      <span>未找到对应</span>
+                                      <span>买入记录</span>
+                                    </div>
+                                  );
+                                }
+                                
+                                // 计算美元价值
+                                const profitUsd = profit * solPrice;
+                                
+                                return (
+                                  <div className="flex flex-col items-center">
+                                    <span className={`font-medium ${isProfitable ? 'text-success-500' : 'text-error-500'}`}>
+                                      {isProfitable ? '+' : ''}{profit.toFixed(6)} SOL
+                                    </span>
+                                    <span className={`text-xs ${isProfitable ? 'text-success-500' : 'text-error-500'}`}>
+                                      {isProfitable ? '+' : ''}
+                                      {solPrice > 0 && (
+                                        <>
+                                          $ {formatDecimal(profitUsd)}
+                                        </>
+                                      )}
+                                    </span>
+                                    <span className={`text-xs ${isProfitable ? 'text-success-500' : 'text-error-500'}`}>
+                                      {isProfitable ? '+' : ''}{profitPercentage.toFixed(2)}%
+                                    </span>
+                                  </div>
+                                );
+                              })()
+                            )}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <StatusBadge 
