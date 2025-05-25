@@ -270,6 +270,9 @@ export default function MonitorAddresses() {
       sol_amount_min: addresses[address].sol_amount_min,
       sol_amount_max: addresses[address].sol_amount_max,
       is_active: addresses[address].is_active,
+      note: addresses[address].note || '',
+      take_profit_percentage: addresses[address].take_profit_percentage || 0,
+      stop_loss_percentage: addresses[address].stop_loss_percentage || 0,
     });
   };
 
@@ -882,6 +885,8 @@ export default function MonitorAddresses() {
                   <th className="px-4 py-2 text-left">计算单元限制</th>
                   <th className="px-4 py-2 text-left">SOL最小值</th>
                   <th className="px-4 py-2 text-left">SOL最大值</th>
+                  <th className="px-4 py-2 text-left">止盈(%)</th>
+                  <th className="px-4 py-2 text-left">止损(%)</th>
                   <th className="px-4 py-2 text-left">备注</th>
                   <th className="px-4 py-2 text-right">操作</th>
                 </tr>
@@ -1072,7 +1077,71 @@ export default function MonitorAddresses() {
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-400">{config.note || '无'}</td>
+                      <td className="px-4 py-3">
+                        {editingAddress === address ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={editValues.take_profit_percentage || 0}
+                            onChange={(e) => setEditValues({ ...editValues, take_profit_percentage: parseFloat(e.target.value) || 0 })}
+                            className="input w-20"
+                          />
+                        ) : (
+                          <span className="text-success-500">{config.take_profit_percentage || 0}%</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingAddress === address ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={editValues.stop_loss_percentage || 0}
+                            onChange={(e) => setEditValues({ ...editValues, stop_loss_percentage: parseFloat(e.target.value) || 0 })}
+                            className="input w-20"
+                          />
+                        ) : (
+                          <span className="text-error-500">{config.stop_loss_percentage || 0}%</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400">
+                        {editingAddress === address ? (
+                          <input
+                            type="text"
+                            value={editValues.note || ''}
+                            onChange={(e) => setEditValues({ ...editValues, note: e.target.value })}
+                            className="input w-full"
+                            placeholder="输入备注"
+                          />
+                        ) : (
+                          <div 
+                            className="cursor-pointer hover:bg-gray-700 px-2 py-1 rounded"
+                            onClick={() => {
+                              setEditingAddress(address);
+                              setEditValues({
+                                ...editValues,
+                                note: config.note || '',
+                                follow_percentage: config.follow_percentage,
+                                slippage_percentage: config.slippage_percentage,
+                                tip_percentage: config.tip_percentage,
+                                min_price_multiplier: config.min_price_multiplier,
+                                max_price_multiplier: config.max_price_multiplier,
+                                priority_fee: config.priority_fee,
+                                compute_unit_limit: config.compute_unit_limit,
+                                sol_amount_min: config.sol_amount_min,
+                                sol_amount_max: config.sol_amount_max,
+                                is_active: config.is_active,
+                                take_profit_percentage: config.take_profit_percentage || 0,
+                                stop_loss_percentage: config.stop_loss_percentage || 0,
+                              });
+                            }}
+                            title="点击编辑备注"
+                          >
+                            {config.note || '点击添加备注'}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-right">
                         {editingAddress === address ? (
                           <div className="flex items-center justify-end space-x-2">

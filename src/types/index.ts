@@ -11,6 +11,8 @@ export interface WalletConfig {
   sol_amount_max: number;
   sol_amount_min: number;
   tip_percentage: number;
+  take_profit_percentage?: number;
+  stop_loss_percentage?: number;
 }
 
 export interface AddWalletRequest {
