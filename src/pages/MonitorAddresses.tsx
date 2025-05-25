@@ -122,6 +122,14 @@ export default function MonitorAddresses() {
     setEditingAddress(address);
     setEditValues({
       follow_percentage: addresses[address].follow_percentage,
+      slippage_percentage: addresses[address].slippage_percentage,
+      tip_percentage: addresses[address].tip_percentage,
+      min_price_multiplier: addresses[address].min_price_multiplier,
+      max_price_multiplier: addresses[address].max_price_multiplier,
+      priority_fee: addresses[address].priority_fee,
+      compute_unit_limit: addresses[address].compute_unit_limit,
+      sol_amount_min: addresses[address].sol_amount_min,
+      sol_amount_max: addresses[address].sol_amount_max,
       is_active: addresses[address].is_active,
     });
   };
@@ -688,44 +696,138 @@ export default function MonitorAddresses() {
                             min="1"
                             max="100"
                             value={editValues.follow_percentage}
-                            onChange={(e) => setEditValues({ ...editValues, follow_percentage: parseInt(e.target.value) })}
+                            onChange={(e) => setEditValues({ ...editValues, follow_percentage: parseFloat(e.target.value) })}
                             className="input w-20"
                           />
                         ) : (
                           `${config.follow_percentage}%`
                         )}
                       </td>
-                      <td className="px-4 py-3">{config.slippage_percentage}%</td>
-                      <td className="px-4 py-3">{config.tip_percentage}%</td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-col">
-                          {formatDecimal(config.min_price_multiplier)}
-                          <span className="text-xs text-success-500">
-                            {solPrice > 0 && `$ ${(config.min_price_multiplier * solPrice).toFixed(6)}`}
-                          </span>
-                        </div>
+                        {editingAddress === address ? (
+                          <input
+                            type="number"
+                            min="0.1"
+                            step="0.1"
+                            value={editValues.slippage_percentage}
+                            onChange={(e) => setEditValues({ ...editValues, slippage_percentage: parseFloat(e.target.value) })}
+                            className="input w-20"
+                          />
+                        ) : (
+                          `${config.slippage_percentage}%`
+                        )}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-col">
-                          {formatDecimal(config.max_price_multiplier)}
-                          <span className="text-xs text-success-500">
-                            {solPrice > 0 && `$ ${(config.max_price_multiplier * solPrice).toFixed(6)}`}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">{config.priority_fee}</td>
-                      <td className="px-4 py-3">{config.compute_unit_limit}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col">
-                          <span>{config.sol_amount_min}</span>
-                          <span className="text-xs text-success-500">{calculateUsdValue(config.sol_amount_min)}</span>
-                        </div>
+                        {editingAddress === address ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={editValues.tip_percentage}
+                            onChange={(e) => setEditValues({ ...editValues, tip_percentage: parseFloat(e.target.value) })}
+                            className="input w-20"
+                          />
+                        ) : (
+                          `${config.tip_percentage}%`
+                        )}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-col">
-                          <span>{config.sol_amount_max}</span>
-                          <span className="text-xs text-success-500">{calculateUsdValue(config.sol_amount_max)}</span>
-                        </div>
+                        {editingAddress === address ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.000001"
+                            value={editValues.min_price_multiplier}
+                            onChange={(e) => setEditValues({ ...editValues, min_price_multiplier: parseFloat(e.target.value) })}
+                            className="input w-20"
+                          />
+                        ) : (
+                          <div className="flex flex-col">
+                            {formatDecimal(config.min_price_multiplier)}
+                            <span className="text-xs text-success-500">
+                              {solPrice > 0 && `$ ${(config.min_price_multiplier * solPrice).toFixed(6)}`}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingAddress === address ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.000001"
+                            value={editValues.max_price_multiplier}
+                            onChange={(e) => setEditValues({ ...editValues, max_price_multiplier: parseFloat(e.target.value) })}
+                            className="input w-20"
+                          />
+                        ) : (
+                          <div className="flex flex-col">
+                            {formatDecimal(config.max_price_multiplier)}
+                            <span className="text-xs text-success-500">
+                              {solPrice > 0 && `$ ${(config.max_price_multiplier * solPrice).toFixed(6)}`}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingAddress === address ? (
+                          <input
+                            type="number"
+                            min="0"
+                            value={editValues.priority_fee}
+                            onChange={(e) => setEditValues({ ...editValues, priority_fee: parseInt(e.target.value) })}
+                            className="input w-20"
+                          />
+                        ) : (
+                          config.priority_fee
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingAddress === address ? (
+                          <input
+                            type="number"
+                            min="0"
+                            value={editValues.compute_unit_limit}
+                            onChange={(e) => setEditValues({ ...editValues, compute_unit_limit: parseInt(e.target.value) })}
+                            className="input w-20"
+                          />
+                        ) : (
+                          config.compute_unit_limit
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingAddress === address ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.001"
+                            value={editValues.sol_amount_min}
+                            onChange={(e) => setEditValues({ ...editValues, sol_amount_min: parseFloat(e.target.value) })}
+                            className="input w-20"
+                          />
+                        ) : (
+                          <div className="flex flex-col">
+                            <span>{config.sol_amount_min}</span>
+                            <span className="text-xs text-success-500">{calculateUsdValue(config.sol_amount_min)}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {editingAddress === address ? (
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.001"
+                            value={editValues.sol_amount_max}
+                            onChange={(e) => setEditValues({ ...editValues, sol_amount_max: parseFloat(e.target.value) })}
+                            className="input w-20"
+                          />
+                        ) : (
+                          <div className="flex flex-col">
+                            <span>{config.sol_amount_max}</span>
+                            <span className="text-xs text-success-500">{calculateUsdValue(config.sol_amount_max)}</span>
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-gray-400">{config.note || '无'}</td>
                       <td className="px-4 py-3 text-right">
