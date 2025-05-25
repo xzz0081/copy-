@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { AddWalletRequest } from '../types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -16,6 +17,11 @@ export const getMonitorAddresses = async () => {
 
 export const getMonitorAddress = async (address: string) => {
   const response = await api.get(`/monitor-addresses/${address}`);
+  return response.data;
+};
+
+export const addMonitorAddress = async (data: AddWalletRequest) => {
+  const response = await api.post('/monitor-addresses/add', data);
   return response.data;
 };
 

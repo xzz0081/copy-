@@ -13,6 +13,17 @@ export interface WalletConfig {
   tip_percentage: number;
 }
 
+export interface AddWalletRequest {
+  address: string;
+  follow_percentage: number;
+  slippage_percentage: number;
+  tip_percentage: number;
+  min_price_multiplier: number;
+  max_price_multiplier: number;
+  priority_fee: number;
+  compute_unit_limit: number;
+}
+
 export interface MonitorAddressesResponse {
   data: {
     sol_address: string;
