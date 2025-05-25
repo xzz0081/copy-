@@ -220,6 +220,60 @@ export default function MonitorAddresses() {
     return `$ ${usdValue.toFixed(2)}`;
   };
 
+  // 格式化小数，将连续的0以上标形式显示
+  const formatDecimal = (value: number): React.ReactNode => {
+    if (!value) return '0';
+    
+    // 转换为字符串
+    const valueStr = value.toString();
+    
+    // 对于科学记数法的数字，进行特殊处理
+    if (valueStr.includes('e-')) {
+      const [base, exponent] = valueStr.split('e-');
+      const zeroCount = parseInt(exponent) - 1;
+      const baseNum = parseFloat(base);
+      const significantDigits = baseNum.toString().replace('.', '');
+      
+      return (
+        <span className="font-mono">
+          0.
+          <sub className="text-xs">{zeroCount}</sub>
+          {significantDigits}
+        </span>
+      );
+    }
+    
+    // 对于普通小数
+    if (valueStr.includes('.')) {
+      const [intPart, decimalPart] = valueStr.split('.');
+      
+      // 计算小数点后连续的0的数量
+      let zeroCount = 0;
+      for (let i = 0; i < decimalPart.length; i++) {
+        if (decimalPart[i] === '0') {
+          zeroCount++;
+        } else {
+          break;
+        }
+      }
+      
+      // 如果有连续的0
+      if (zeroCount > 2) {
+        const restDigits = decimalPart.substring(zeroCount);
+        return (
+          <span className="font-mono">
+            {intPart}.
+            <sub className="text-xs">{zeroCount}</sub>
+            {restDigits}
+          </span>
+        );
+      }
+    }
+    
+    // 其他情况直接返回原值
+    return <span className="font-mono">{valueStr}</span>;
+  };
+
   // 格式化最后更新时间
   const formatLastUpdate = (): string => {
     if (!lastPriceUpdate) return '';
@@ -606,8 +660,22 @@ export default function MonitorAddresses() {
                       </td>
                       <td className="px-4 py-3">{config.slippage_percentage}%</td>
                       <td className="px-4 py-3">{config.tip_percentage}%</td>
-                      <td className="px-4 py-3">{config.min_price_multiplier}</td>
-                      <td className="px-4 py-3">{config.max_price_multiplier}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col">
+                          {formatDecimal(config.min_price_multiplier)}
+                          <span className="text-xs text-success-500">
+                            {solPrice > 0 && `$ ${(config.min_price_multiplier * solPrice).toFixed(6)}`}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col">
+                          {formatDecimal(config.max_price_multiplier)}
+                          <span className="text-xs text-success-500">
+                            {solPrice > 0 && `$ ${(config.max_price_multiplier * solPrice).toFixed(6)}`}
+                          </span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3">{config.priority_fee}</td>
                       <td className="px-4 py-3">{config.compute_unit_limit}</td>
                       <td className="px-4 py-3">
