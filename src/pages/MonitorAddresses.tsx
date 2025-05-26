@@ -11,9 +11,6 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { calculateTransactionsProfits, formatProfit, formatProfitPercentage } from '../utils/profit';
 
-// WebSocket服务地址
-const WS_URL = 'ws://d19e-2408-8266-5903-f0a-69cf-16a0-ec95-7ff0.ngrok-free.app';
-
 export default function MonitorAddresses() {
   const [addresses, setAddresses] = useState<Record<string, WalletConfig>>({});
   const [targetAddresses, setTargetAddresses] = useState<string[]>([]);
@@ -102,9 +99,6 @@ export default function MonitorAddresses() {
 
   // 初始化WebSocket连接
   useEffect(() => {
-    // 连接WebSocket
-    connectWebSocket(WS_URL);
-
     // 监听WebSocket事件
     const handleConnected = () => {
       setWsConnected(true);
@@ -128,12 +122,11 @@ export default function MonitorAddresses() {
     addWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
     addWebSocketListener(WebSocketEvents.TOKEN_PRICE, handlePriceUpdate);
 
-    // 组件卸载时清理
+    // 组件卸载时只移除监听器，不断开连接
     return () => {
       removeWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
       removeWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
       removeWebSocketListener(WebSocketEvents.TOKEN_PRICE, handlePriceUpdate);
-      disconnectWebSocket();
     };
   }, []);
 

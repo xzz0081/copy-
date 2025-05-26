@@ -2,16 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Download, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'lucide-react';
 import { getTransactions } from '../services/api';
 import { TransactionsResponse, Transaction } from '../types';
-import { connectWebSocket, disconnectWebSocket, addWebSocketListener, removeWebSocketListener, WebSocketEvents } from '../services/websocket';
+import { addWebSocketListener, removeWebSocketListener, WebSocketEvents } from '../services/websocket';
 import { calculateTransactionsProfits, formatProfit, formatProfitPercentage } from '../utils/profit';
 import Spinner from '../components/ui/Spinner';
 import AddressDisplay from '../components/ui/AddressDisplay';
 import StatusBadge from '../components/ui/StatusBadge';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-
-// WebSocket服务地址
-const WS_URL = 'ws://d19e-2408-8266-5903-f0a-69cf-16a0-ec95-7ff0.ngrok-free.app';
 
 export default function TransactionHistory() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -26,11 +23,8 @@ export default function TransactionHistory() {
   const wsConnectedRef = useRef(wsConnected);
   const transactionsRef = useRef(transactions);
 
-  // 初始化WebSocket连接
+  // 初始化WebSocket连接监听
   useEffect(() => {
-    // 连接WebSocket
-    connectWebSocket(WS_URL);
-
     // 监听WebSocket事件
     const handleConnected = () => {
       setWsConnected(true);
@@ -56,12 +50,11 @@ export default function TransactionHistory() {
     addWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
     addWebSocketListener(WebSocketEvents.TOKEN_PRICE, handlePriceUpdate);
 
-    // 组件卸载时清理
+    // 组件卸载时只移除监听器，不断开连接
     return () => {
       removeWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
       removeWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
       removeWebSocketListener(WebSocketEvents.TOKEN_PRICE, handlePriceUpdate);
-      disconnectWebSocket();
     };
   }, []);
 
