@@ -48,7 +48,12 @@ export default function TransactionHistory() {
 
     // 处理代币价格更新
     const handleTokenPriceMessage = (data: any) => {
-      if (data.type === 'token_price' && data.token && data.price !== undefined) {
+      // 处理不同格式的价格消息
+      // 1. {type: 'token_price', token: '...', price: ...} 格式
+      // 2. {price: ..., token: '...'} 格式 (直接从WebSocket收到)
+      if ((data.type === 'token_price' && data.token && data.price !== undefined) || 
+          (!data.type && data.token && data.price !== undefined)) {
+        
         const tokenAddress = data.token.toLowerCase();
         const price = parseFloat(data.price);
         
@@ -61,11 +66,31 @@ export default function TransactionHistory() {
         // 如果当前有交易记录，尝试匹配并更新
         if (transactionsRef.current.length > 0) {
           // 检查是否有匹配的代币地址
-          const hasMatchingToken = transactionsRef.current.some(tx => 
-            tx.token_address.toLowerCase() === tokenAddress ||
-            tx.token_address.toLowerCase().startsWith(tokenAddress.substring(0, 8)) ||
-            tokenAddress.startsWith(tx.token_address.toLowerCase().substring(0, 8))
-          );
+          const hasMatchingToken = transactionsRef.current.some(tx => {
+            const txTokenAddress = tx.token_address.toLowerCase();
+            
+            // 精确匹配
+            if (txTokenAddress === tokenAddress) {
+              return true;
+            }
+            
+            // pump后缀匹配
+            if (txTokenAddress.endsWith('pump') && tokenAddress === txTokenAddress.slice(0, -4)) {
+              return true;
+            }
+            
+            if (!txTokenAddress.endsWith('pump') && tokenAddress === txTokenAddress + 'pump') {
+              return true;
+            }
+            
+            // 部分匹配（前8个字符）
+            if (txTokenAddress.startsWith(tokenAddress.substring(0, 8)) ||
+                tokenAddress.startsWith(txTokenAddress.substring(0, 8))) {
+              return true;
+            }
+            
+            return false;
+          });
           
           if (hasMatchingToken) {
             console.log(`找到匹配的代币: ${tokenAddress}，更新UI...`);
@@ -96,8 +121,32 @@ export default function TransactionHistory() {
     
     // 尝试直接匹配
     const normalizedAddress = tokenAddress.toLowerCase();
+    
+    console.log(`尝试获取代币 ${normalizedAddress} 的价格`);
+    console.log(`当前价格缓存中有 ${Object.keys(tokenPriceCache).length} 个代币`);
+    
+    // 直接匹配
     if (tokenPriceCache[normalizedAddress]) {
+      console.log(`直接匹配到价格: ${tokenPriceCache[normalizedAddress]}`);
       return tokenPriceCache[normalizedAddress];
+    }
+    
+    // 尝试用结尾包含"pump"的地址匹配
+    // 有些代币地址在WebSocket响应中会带上"pump"后缀
+    if (normalizedAddress.endsWith('pump')) {
+      // 已经带有pump后缀，去掉它试试
+      const addressWithoutPump = normalizedAddress.slice(0, -4);
+      if (tokenPriceCache[addressWithoutPump]) {
+        console.log(`去掉pump后缀匹配到价格: ${tokenPriceCache[addressWithoutPump]}`);
+        return tokenPriceCache[addressWithoutPump];
+      }
+    } else {
+      // 没有pump后缀，加上试试
+      const addressWithPump = normalizedAddress + 'pump';
+      if (tokenPriceCache[addressWithPump]) {
+        console.log(`添加pump后缀匹配到价格: ${tokenPriceCache[addressWithPump]}`);
+        return tokenPriceCache[addressWithPump];
+      }
     }
     
     // 尝试部分匹配（前8个字符）
@@ -107,9 +156,11 @@ export default function TransactionHistory() {
     );
     
     if (matchingKey) {
+      console.log(`部分匹配到价格: ${tokenPriceCache[matchingKey]} (通过 ${matchingKey})`);
       return tokenPriceCache[matchingKey];
     }
     
+    console.log(`未找到代币 ${normalizedAddress} 的价格，返回0`);
     return 0;
   };
 
@@ -117,14 +168,31 @@ export default function TransactionHistory() {
   const updateTransactionsWithPrices = () => {
     if (transactionsRef.current.length === 0) return;
     
+    console.log('正在更新交易记录价格...');
+    
     // 为每条交易记录设置当前价格
     const updatedTransactions = transactionsRef.current.map(tx => {
-      const currentPrice = getTokenPrice(tx.token_address);
-      return { ...tx, current_price: currentPrice };
+      const tokenAddress = tx.token_address;
+      // 使用WebSocket实时价格
+      const websocketPrice = getTokenPrice(tokenAddress);
+      
+      // 强制使用WebSocket价格，即使为0也使用真实值
+      console.log(`交易 ${tx.signature.substring(0, 8)}... 代币 ${tokenAddress.substring(0, 8)}...`);
+      console.log(`历史价格: ${tx.price}, WebSocket价格: ${websocketPrice}`);
+      
+      // 不做任何兜底或格式转换，直接使用WebSocket价格
+      return { ...tx, current_price: websocketPrice };
+    });
+    
+    // 查看价格是否真正更新
+    console.log('更新后的交易记录:');
+    updatedTransactions.forEach((tx, index) => {
+      console.log(`#${index} 代币: ${tx.token_address.substring(0, 8)}... 历史价格: ${tx.price}, 当前价格(WebSocket): ${tx.current_price}`);
     });
     
     // 计算盈利情况
     const processed = calculateTransactionsProfits(updatedTransactions, solPrice);
+    console.log('处理后的交易记录数: ' + processed.length);
     setProcessedTransactions(processed);
   };
 
@@ -171,8 +239,10 @@ export default function TransactionHistory() {
 
   // 计算美元价值
   const calculateUsdValue = (tokenPrice: number): string => {
-    if (!solPrice || !tokenPrice) return '$ 0.00';
-    const usdValue = tokenPrice * solPrice * 1000000;
+    if (!solPrice || tokenPrice === undefined) return '$ 0.00';
+    // 直接使用原始价格计算，不做任何缩放或调整
+    const usdValue = tokenPrice * solPrice;
+    console.log(`价格计算 (原始值): ${tokenPrice} * ${solPrice} = ${usdValue}`);
     return `$ ${usdValue.toFixed(2)}`;
   };
 

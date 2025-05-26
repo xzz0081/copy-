@@ -395,8 +395,12 @@ export const connectWebSocket = (url: string): void => {
         // 直接打印所有收到的消息，不做复杂处理
         console.log('WebSocket消息接收:', data);
         
-        // 更新代币价格缓存
-        if (data.type === 'price_update' && data.token && data.price !== undefined) {
+        // 处理价格更新消息，兼容多种格式
+        // 格式1: {type: 'price_update', token: '...', price: ...}
+        // 格式2: {price: ..., token: '...'}
+        if ((data.type === 'price_update' && data.token && data.price !== undefined) ||
+            (!data.type && data.token && data.price !== undefined)) {
+          
           const tokenAddress = data.token.toLowerCase();
           const price = parseFloat(data.price);
           
@@ -405,17 +409,18 @@ export const connectWebSocket = (url: string): void => {
           
           // 更新缓存
           tokenPriceCache[tokenAddress] = price;
-        }
-        
-        // 始终发送MESSAGE事件，包含完整数据
-        priceEventEmitter.emit(WebSocketEvents.MESSAGE, data);
-        
-        // 为兼容性保留TOKEN_PRICE事件
-        if (data.type === 'price_update' && data.token) {
+          
+          // 始终发送MESSAGE事件，包含完整数据
+          priceEventEmitter.emit(WebSocketEvents.MESSAGE, data);
+          
+          // 为兼容性保留TOKEN_PRICE事件
           priceEventEmitter.emit(WebSocketEvents.TOKEN_PRICE, {
             token: data.token,
             price: data.price
           });
+        } else {
+          // 其他类型消息也发送MESSAGE事件
+          priceEventEmitter.emit(WebSocketEvents.MESSAGE, data);
         }
       } catch (error) {
         console.error('解析WebSocket消息失败:', error);
