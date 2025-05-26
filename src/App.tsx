@@ -6,17 +6,29 @@ import SystemHealth from './pages/SystemHealth';
 import { useEffect } from 'react';
 import { connectWebSocket, initializeWebSocketService } from './services/websocket';
 
-// WebSocket服务地址
-const WS_URL = 'ws://d19e-2408-8266-5903-f0a-69cf-16a0-ec95-7ff0.ngrok-free.app';
+// WebSocket本地服务地址
+// 根据实际运行的WebSocket服务端口进行调整
+const WS_URL = 'ws://0.0.0.0:8081';
 
 function App() {
   // 应用启动时初始化WebSocket服务
   useEffect(() => {
-    // 初始化WebSocket服务（设置事件监听和连接检查）
-    initializeWebSocketService();
-    
-    // 建立初始连接
-    connectWebSocket(WS_URL);
+    try {
+      console.log('初始化WebSocket服务...');
+      
+      // 初始化WebSocket服务（设置事件监听和连接检查）
+      initializeWebSocketService();
+      
+      if (WS_URL) {
+        console.log(`尝试连接WebSocket服务: ${WS_URL}`);
+        // 建立初始连接
+        connectWebSocket(WS_URL);
+      } else {
+        console.error('未配置WebSocket URL，无法连接');
+      }
+    } catch (error) {
+      console.error('WebSocket初始化失败:', error);
+    }
     
     // 组件卸载时不断开WebSocket，让服务自行管理连接
   }, []);

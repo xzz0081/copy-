@@ -187,7 +187,7 @@ export default function SystemHealth() {
                   <h4 className="text-xs font-medium text-gray-400">消息接收数</h4>
                   <Activity className="h-3 w-3 text-gray-400" />
                 </div>
-                <p className="mt-1 text-lg font-semibold">{wsStats?.messagesReceived || 0}</p>
+                <p className="mt-1 text-lg font-semibold">{wsStats?.currentSessionMessages || 0}</p>
               </div>
               
               <div className="rounded-lg border border-gray-700 bg-gray-800 p-3">
@@ -321,7 +321,7 @@ export default function SystemHealth() {
             </p>
             <p className="mt-2 text-sm text-gray-400">
               {wsStats?.isConnected 
-                ? `已接收 ${wsStats.messagesReceived} 条消息` 
+                ? `当前会话已接收 ${wsStats.currentSessionMessages} 条消息` 
                 : '价格推送服务未连接'}
             </p>
           </div>

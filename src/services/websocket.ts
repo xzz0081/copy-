@@ -44,6 +44,7 @@ export interface WebSocketStats {
   disconnections: number;      // 断开连接次数
   connectionErrors: number;    // 连接错误次数
   messagesReceived: number;    // 接收到的消息数
+  currentSessionMessages: number; // 当前会话接收的消息数
   heartbeatsSent: number;      // 发送的心跳包数量
   lastConnectedTime: Date | null; // 最后一次连接时间
   lastDisconnectedTime: Date | null; // 最后一次断开连接时间
@@ -78,6 +79,7 @@ const wsStats: WebSocketStats = {
   disconnections: 0,
   connectionErrors: 0,
   messagesReceived: 0,
+  currentSessionMessages: 0,
   heartbeatsSent: 0,
   lastConnectedTime: null,
   lastDisconnectedTime: null,
@@ -219,7 +221,8 @@ const handleConnectionFailure = () => {
   updateStats({
     disconnections: wsStats.disconnections + 1,
     lastDisconnectedTime: disconnectedTime,
-    isConnected: false
+    isConnected: false,
+    currentSessionMessages: 0 // 重置当前会话消息计数
   });
   
   // 停止uptime计时器
@@ -250,6 +253,12 @@ const scheduleReconnect = () => {
     window.clearTimeout(reconnectTimer);
   }
   
+  // 确保有URL可用于重连
+  if (!savedWsUrl) {
+    console.error('无法重连：WebSocket URL未保存');
+    return;
+  }
+  
   if (reconnectAttempts < 10) { // 最多尝试10次
     // 使用指数退避策略，但设置上限
     const delay = Math.min(1000 * Math.pow(1.5, reconnectAttempts), 30000);
@@ -257,14 +266,24 @@ const scheduleReconnect = () => {
     
     reconnectTimer = window.setTimeout(() => {
       reconnectAttempts++;
-      connectWebSocket(savedWsUrl);
+      // 确保使用保存的URL进行重连
+      if (savedWsUrl) {
+        connectWebSocket(savedWsUrl);
+      } else {
+        console.error('重连失败：WebSocket URL已丢失');
+      }
     }, delay);
   } else if (initialConnectionEstablished) {
     // 如果之前连接成功过，重置重连次数并安排一个长时间后的重连
     console.log('达到最大重连次数，将在2分钟后再次尝试');
     reconnectTimer = window.setTimeout(() => {
       reconnectAttempts = 0;
-      connectWebSocket(savedWsUrl);
+      // 确保使用保存的URL进行重连
+      if (savedWsUrl) {
+        connectWebSocket(savedWsUrl);
+      } else {
+        console.error('重连失败：WebSocket URL已丢失');
+      }
     }, 120000); // 2分钟后再次尝试
   }
 };
@@ -277,6 +296,7 @@ export const connectWebSocket = (url: string): void => {
   // 保存URL以便于重连
   if (url) {
     savedWsUrl = url;
+    console.log(`保存WebSocket URL: ${url}`);
   } else if (!savedWsUrl) {
     console.error('未提供WebSocket URL');
     return;
@@ -297,6 +317,7 @@ export const connectWebSocket = (url: string): void => {
 
   try {
     console.log('正在连接WebSocket...');
+    // 始终使用保存的URL，确保URL不会丢失
     wsInstance = new WebSocket(savedWsUrl);
 
     // 设置连接超时
@@ -337,7 +358,8 @@ export const connectWebSocket = (url: string): void => {
         totalConnections: wsStats.totalConnections + 1,
         lastConnectedTime: connectedTime,
         connectionStartTime: connectedTime,
-        isConnected: true
+        isConnected: true,
+        currentSessionMessages: 0 // 重置当前会话消息计数
       });
       
       // 启动uptime计时器
@@ -359,7 +381,8 @@ export const connectWebSocket = (url: string): void => {
         
         // 更新统计信息 - 接收消息
         updateStats({
-          messagesReceived: wsStats.messagesReceived + 1
+          messagesReceived: wsStats.messagesReceived + 1,
+          currentSessionMessages: wsStats.currentSessionMessages + 1
         });
         
         // 处理心跳响应
@@ -396,7 +419,8 @@ export const connectWebSocket = (url: string): void => {
       updateStats({
         disconnections: wsStats.disconnections + 1,
         lastDisconnectedTime: disconnectedTime,
-        isConnected: false
+        isConnected: false,
+        currentSessionMessages: 0 // 重置当前会话消息计数
       });
       
       // 停止uptime计时器
@@ -457,6 +481,7 @@ export const initializeWebSocketService = (): void => {
     disconnections: 0,
     connectionErrors: 0,
     messagesReceived: 0,
+    currentSessionMessages: 0,
     heartbeatsSent: 0,
     lastConnectedTime: null,
     lastDisconnectedTime: null,
@@ -470,6 +495,8 @@ export const initializeWebSocketService = (): void => {
  * 断开WebSocket连接
  */
 export const disconnectWebSocket = (): void => {
+  console.log('主动断开WebSocket连接');
+  
   if (wsInstance) {
     try {
       wsInstance.close(1000, 'User requested disconnect');
@@ -497,7 +524,8 @@ export const disconnectWebSocket = (): void => {
   isConnected = false;
   isConnecting = false;
   reconnectAttempts = 0;
-  savedWsUrl = '';
+  // 保留savedWsUrl，除非明确要求不再重连
+  // savedWsUrl = '';
 };
 
 /**
