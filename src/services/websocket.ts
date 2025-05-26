@@ -28,7 +28,8 @@ export enum WebSocketEvents {
   DISCONNECTED = 'disconnected',
   MESSAGE = 'message',
   ERROR = 'error',
-  TOKEN_PRICE = 'token_price'
+  TOKEN_PRICE = 'token_price',
+  STATS_UPDATED = 'stats_updated'  // 新增：统计信息更新事件
 }
 
 // 代币价格类型
@@ -37,28 +38,257 @@ export interface TokenPrice {
   price: number;
 }
 
+// WebSocket统计信息类型
+export interface WebSocketStats {
+  totalConnections: number;    // 总连接次数
+  disconnections: number;      // 断开连接次数
+  connectionErrors: number;    // 连接错误次数
+  messagesReceived: number;    // 接收到的消息数
+  heartbeatsSent: number;      // 发送的心跳包数量
+  lastConnectedTime: Date | null; // 最后一次连接时间
+  lastDisconnectedTime: Date | null; // 最后一次断开连接时间
+  uptime: number;              // 连接保持时间(秒)
+  connectionStartTime: Date | null; // 当前连接开始时间
+  isConnected: boolean;        // 当前是否连接
+}
+
 // 代币价格缓存，用于存储最新价格
 const tokenPriceCache: Record<string, number> = {};
 
 // 创建事件发射器
 const priceEventEmitter = new EventEmitter();
 
-// WebSocket连接实例
+// WebSocket状态管理
 let wsInstance: WebSocket | null = null;
 let isConnected = false;
+let isConnecting = false; // 新增，防止重复连接尝试
 let reconnectAttempts = 0;
 let reconnectTimer: number | null = null;
+let heartbeatTimer: number | null = null;
+let connectionCheckTimer: number | null = null;
+let initialConnectionEstablished = false; // 是否已建立过初始连接
+let uptimeTimer: number | null = null; // 用于计算连接保持时间
+
+// 保存WebSocket URL
+let savedWsUrl = '';
+
+// WebSocket统计信息
+const wsStats: WebSocketStats = {
+  totalConnections: 0,
+  disconnections: 0,
+  connectionErrors: 0,
+  messagesReceived: 0,
+  heartbeatsSent: 0,
+  lastConnectedTime: null,
+  lastDisconnectedTime: null,
+  uptime: 0,
+  connectionStartTime: null,
+  isConnected: false
+};
+
+// 更新并发布统计信息
+const updateStats = (updates: Partial<WebSocketStats> = {}) => {
+  Object.assign(wsStats, updates);
+  
+  // 更新连接状态
+  wsStats.isConnected = isConnected;
+  
+  // 如果当前已连接，计算uptime
+  if (isConnected && wsStats.connectionStartTime) {
+    wsStats.uptime = Math.floor((new Date().getTime() - wsStats.connectionStartTime.getTime()) / 1000);
+  }
+  
+  // 发布统计信息更新事件
+  priceEventEmitter.emit(WebSocketEvents.STATS_UPDATED, { ...wsStats });
+};
+
+// 启动uptime计时器
+const startUptimeTimer = () => {
+  if (uptimeTimer) {
+    window.clearInterval(uptimeTimer);
+  }
+  
+  // 每秒更新一次uptime
+  uptimeTimer = window.setInterval(() => {
+    if (isConnected) {
+      updateStats();
+    }
+  }, 1000);
+};
+
+// 停止uptime计时器
+const stopUptimeTimer = () => {
+  if (uptimeTimer) {
+    window.clearInterval(uptimeTimer);
+    uptimeTimer = null;
+  }
+};
+
+// 浏览器页面可见性变化监听
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    // 页面变为可见时，检查连接
+    if (!isConnected && !isConnecting) {
+      console.log('页面可见，检查WebSocket连接...');
+      connectWebSocket(savedWsUrl);
+    }
+  }
+};
+
+// 心跳包数据（简单的PING消息）
+const HEARTBEAT_MSG = JSON.stringify({ type: 'ping' });
+
+/**
+ * 发送心跳包以保持连接
+ */
+const sendHeartbeat = () => {
+  if (wsInstance && isConnected) {
+    try {
+      wsInstance.send(HEARTBEAT_MSG);
+      console.log('心跳包已发送');
+      
+      // 更新心跳统计
+      updateStats({ 
+        heartbeatsSent: wsStats.heartbeatsSent + 1 
+      });
+    } catch (error) {
+      console.error('发送心跳包失败:', error);
+      // 如果发送失败，可能连接已中断，尝试重连
+      handleConnectionFailure();
+    }
+  }
+};
+
+/**
+ * 启动心跳检测
+ */
+const startHeartbeat = () => {
+  // 清除现有心跳
+  stopHeartbeat();
+  
+  // 每10秒发送一次心跳包
+  heartbeatTimer = window.setInterval(sendHeartbeat, 10000);
+};
+
+/**
+ * 停止心跳检测
+ */
+const stopHeartbeat = () => {
+  if (heartbeatTimer) {
+    window.clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+};
+
+/**
+ * 启动连接状态检查
+ */
+const startConnectionCheck = () => {
+  // 清除现有检查
+  stopConnectionCheck();
+  
+  // 每60秒检查一次连接状态
+  connectionCheckTimer = window.setInterval(() => {
+    if (!isConnected && !isConnecting && savedWsUrl) {
+      console.log('连接检查: WebSocket未连接，尝试重连...');
+      connectWebSocket(savedWsUrl);
+    }
+  }, 60000);
+};
+
+/**
+ * 停止连接状态检查
+ */
+const stopConnectionCheck = () => {
+  if (connectionCheckTimer) {
+    window.clearInterval(connectionCheckTimer);
+    connectionCheckTimer = null;
+  }
+};
+
+/**
+ * 处理连接失败
+ */
+const handleConnectionFailure = () => {
+  isConnected = false;
+  isConnecting = false;
+  
+  const disconnectedTime = new Date();
+  
+  // 更新统计信息
+  updateStats({
+    disconnections: wsStats.disconnections + 1,
+    lastDisconnectedTime: disconnectedTime,
+    isConnected: false
+  });
+  
+  // 停止uptime计时器
+  stopUptimeTimer();
+  
+  if (wsInstance) {
+    try {
+      wsInstance.close();
+    } catch (e) {
+      // 忽略关闭错误
+    }
+    wsInstance = null;
+  }
+  
+  priceEventEmitter.emit(WebSocketEvents.DISCONNECTED);
+  
+  // 如果需要，安排重连
+  if (savedWsUrl) {
+    scheduleReconnect();
+  }
+};
+
+/**
+ * 安排重连
+ */
+const scheduleReconnect = () => {
+  if (reconnectTimer) {
+    window.clearTimeout(reconnectTimer);
+  }
+  
+  if (reconnectAttempts < 10) { // 最多尝试10次
+    // 使用指数退避策略，但设置上限
+    const delay = Math.min(1000 * Math.pow(1.5, reconnectAttempts), 30000);
+    console.log(`${delay / 1000}秒后尝试重新连接... (尝试 ${reconnectAttempts + 1}/10)`);
+    
+    reconnectTimer = window.setTimeout(() => {
+      reconnectAttempts++;
+      connectWebSocket(savedWsUrl);
+    }, delay);
+  } else if (initialConnectionEstablished) {
+    // 如果之前连接成功过，重置重连次数并安排一个长时间后的重连
+    console.log('达到最大重连次数，将在2分钟后再次尝试');
+    reconnectTimer = window.setTimeout(() => {
+      reconnectAttempts = 0;
+      connectWebSocket(savedWsUrl);
+    }, 120000); // 2分钟后再次尝试
+  }
+};
 
 /**
  * 连接到WebSocket服务
  * @param url WebSocket服务URL
  */
 export const connectWebSocket = (url: string): void => {
-  // 如果已经连接，则不再重复连接
-  if (isConnected && wsInstance) {
+  // 保存URL以便于重连
+  if (url) {
+    savedWsUrl = url;
+  } else if (!savedWsUrl) {
+    console.error('未提供WebSocket URL');
     return;
   }
-
+  
+  // 如果已经连接或正在连接中，则不再重复连接
+  if ((isConnected && wsInstance) || isConnecting) {
+    return;
+  }
+  
+  isConnecting = true;
+  
   // 清除重连定时器
   if (reconnectTimer) {
     window.clearTimeout(reconnectTimer);
@@ -66,13 +296,59 @@ export const connectWebSocket = (url: string): void => {
   }
 
   try {
-    wsInstance = new WebSocket(url);
+    console.log('正在连接WebSocket...');
+    wsInstance = new WebSocket(savedWsUrl);
+
+    // 设置连接超时
+    const connectionTimeout = window.setTimeout(() => {
+      if (isConnecting && !isConnected) {
+        console.error('WebSocket连接超时');
+        isConnecting = false;
+        
+        // 更新统计信息 - 连接错误
+        updateStats({
+          connectionErrors: wsStats.connectionErrors + 1
+        });
+        
+        if (wsInstance) {
+          try {
+            wsInstance.close();
+          } catch (e) {
+            // 忽略关闭错误
+          }
+          wsInstance = null;
+        }
+        scheduleReconnect();
+      }
+    }, 10000); // 10秒连接超时
 
     // 连接打开
     wsInstance.onopen = () => {
       console.log('WebSocket连接已建立');
       isConnected = true;
+      isConnecting = false;
+      initialConnectionEstablished = true;
       reconnectAttempts = 0;
+      
+      const connectedTime = new Date();
+      
+      // 更新统计信息
+      updateStats({
+        totalConnections: wsStats.totalConnections + 1,
+        lastConnectedTime: connectedTime,
+        connectionStartTime: connectedTime,
+        isConnected: true
+      });
+      
+      // 启动uptime计时器
+      startUptimeTimer();
+      
+      // 清除连接超时
+      window.clearTimeout(connectionTimeout);
+      
+      // 启动心跳
+      startHeartbeat();
+      
       priceEventEmitter.emit(WebSocketEvents.CONNECTED);
     };
 
@@ -80,6 +356,17 @@ export const connectWebSocket = (url: string): void => {
     wsInstance.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        
+        // 更新统计信息 - 接收消息
+        updateStats({
+          messagesReceived: wsStats.messagesReceived + 1
+        });
+        
+        // 处理心跳响应
+        if (data.type === 'pong') {
+          console.log('收到心跳响应');
+          return;
+        }
         
         // 更新价格缓存
         if (data.token && data.price !== undefined) {
@@ -95,32 +382,88 @@ export const connectWebSocket = (url: string): void => {
     };
 
     // 连接关闭
-    wsInstance.onclose = () => {
-      console.log('WebSocket连接已关闭');
+    wsInstance.onclose = (event) => {
+      // 清除连接超时
+      window.clearTimeout(connectionTimeout);
+      
+      console.log(`WebSocket连接已关闭: Code=${event.code}, Reason=${event.reason}`);
       isConnected = false;
+      isConnecting = false;
+      
+      const disconnectedTime = new Date();
+      
+      // 更新统计信息
+      updateStats({
+        disconnections: wsStats.disconnections + 1,
+        lastDisconnectedTime: disconnectedTime,
+        isConnected: false
+      });
+      
+      // 停止uptime计时器
+      stopUptimeTimer();
+      
+      // 停止心跳
+      stopHeartbeat();
+      
       priceEventEmitter.emit(WebSocketEvents.DISCONNECTED);
       
-      // 尝试重新连接
-      if (reconnectAttempts < 5) {
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-        console.log(`${delay / 1000}秒后尝试重新连接...`);
-        
-        reconnectTimer = window.setTimeout(() => {
-          reconnectAttempts++;
-          connectWebSocket(url);
-        }, delay);
+      // 如果不是正常关闭，则尝试重新连接
+      if (event.code !== 1000) {
+        scheduleReconnect();
       }
     };
 
     // 连接错误
     wsInstance.onerror = (error) => {
       console.error('WebSocket连接错误:', error);
+      
+      // 更新统计信息 - 连接错误
+      updateStats({
+        connectionErrors: wsStats.connectionErrors + 1
+      });
+      
       priceEventEmitter.emit(WebSocketEvents.ERROR, error);
+      
+      // 让onclose处理重连
     };
   } catch (error) {
     console.error('创建WebSocket连接失败:', error);
+    
+    // 更新统计信息 - 连接错误
+    updateStats({
+      connectionErrors: wsStats.connectionErrors + 1
+    });
+    
     priceEventEmitter.emit(WebSocketEvents.ERROR, '创建连接失败');
+    isConnecting = false;
+    scheduleReconnect();
   }
+};
+
+/**
+ * 初始化WebSocket服务
+ * 设置页面可见性事件监听和连接检查
+ */
+export const initializeWebSocketService = (): void => {
+  // 添加页面可见性变化监听
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  
+  // 启动连接状态检查
+  startConnectionCheck();
+  
+  // 初始化统计信息
+  updateStats({
+    totalConnections: 0,
+    disconnections: 0,
+    connectionErrors: 0,
+    messagesReceived: 0,
+    heartbeatsSent: 0,
+    lastConnectedTime: null,
+    lastDisconnectedTime: null,
+    uptime: 0,
+    connectionStartTime: null,
+    isConnected: false
+  });
 };
 
 /**
@@ -128,7 +471,11 @@ export const connectWebSocket = (url: string): void => {
  */
 export const disconnectWebSocket = (): void => {
   if (wsInstance) {
-    wsInstance.close();
+    try {
+      wsInstance.close(1000, 'User requested disconnect');
+    } catch (e) {
+      // 忽略关闭错误
+    }
     wsInstance = null;
   }
   
@@ -137,8 +484,29 @@ export const disconnectWebSocket = (): void => {
     reconnectTimer = null;
   }
   
+  // 停止uptime计时器
+  stopUptimeTimer();
+  
+  // 停止心跳和连接检查
+  stopHeartbeat();
+  stopConnectionCheck();
+  
+  // 移除页面可见性监听
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+  
   isConnected = false;
+  isConnecting = false;
   reconnectAttempts = 0;
+  savedWsUrl = '';
+};
+
+/**
+ * 获取WebSocket统计信息
+ * @returns WebSocket统计信息对象
+ */
+export const getWebSocketStats = (): WebSocketStats => {
+  // 返回统计信息的副本
+  return { ...wsStats };
 };
 
 /**
@@ -184,8 +552,10 @@ export const removeWebSocketListener = (
 export default {
   connectWebSocket,
   disconnectWebSocket,
+  initializeWebSocketService,
   getTokenPrice,
   getWebSocketStatus,
+  getWebSocketStats,
   addWebSocketListener,
   removeWebSocketListener,
   WebSocketEvents

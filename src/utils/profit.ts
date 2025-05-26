@@ -50,7 +50,7 @@ export const calculateTransactionsProfits = (transactions: Transaction[]): Trans
  * @returns 计算后的交易记录
  */
 const calculateTokenProfits = (transactions: Transaction[], currentPrice: number): Transaction[] => {
-  // 持仓数量和平均成本
+  // 持仓数量和买入价格记录
   let holdingAmount = 0;
   let totalCost = 0;
   
@@ -63,39 +63,73 @@ const calculateTokenProfits = (transactions: Transaction[], currentPrice: number
     if (tx.tx_type.toLowerCase().includes('buy')) {
       // 添加到持仓
       holdingAmount += tx.amount;
-      totalCost += tx.price * tx.amount;
+      totalCost += tx.sol_amount; // 累计SOL花费
       
-      // 计算持仓盈利
-      if (holdingAmount > 0) {
-        const avgPrice = totalCost / holdingAmount;
-        result.position_profit = (currentPrice - avgPrice) * holdingAmount;
-        result.position_profit_percentage = ((currentPrice / avgPrice) - 1) * 100;
-      } else {
-        result.position_profit = 0;
-        result.position_profit_percentage = 0;
-      }
+      // 计算持仓盈利 - 对比买入时价格与当前价格
+      const buyPrice = tx.price; // token本位价格
+      
+      // 当前盈亏比例(百分比) = (当前价格 / 买入价格 - 1) * 100
+      result.position_profit_percentage = currentPrice > 0 && buyPrice > 0 
+        ? ((currentPrice / buyPrice) - 1) * 100 
+        : -100; // 如果当前价格为0，则视为亏损100%
+      
+      // 买入时SOL金额
+      const buyInSolAmount = tx.sol_amount;
+      
+      // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
+      const currentSolValue = buyInSolAmount * (1 + result.position_profit_percentage / 100);
+      
+      // 盈亏SOL金额 = 当前价值 - 买入SOL金额
+      result.position_profit = currentSolValue - buyInSolAmount;
     }
     // 卖出交易
     else if (tx.tx_type.toLowerCase().includes('sell')) {
       // 如果有持仓，计算卖出盈利
-      if (holdingAmount > 0) {
-        const avgPrice = totalCost / holdingAmount;
-        result.profit = (tx.price - avgPrice) * tx.amount;
-        result.profit_percentage = ((tx.price / avgPrice) - 1) * 100;
+      if (holdingAmount > 0 && totalCost > 0) {
+        const avgCostPerToken = totalCost / holdingAmount; // 平均每个token花费的SOL
+        const currentSellValue = tx.sol_amount; // 卖出获得的SOL
+        const sellAmount = tx.amount; // 卖出的token数量
+        const estimatedCost = avgCostPerToken * sellAmount; // 估算的买入成本
+        
+        // 已实现盈利 = 卖出获得SOL - 估算买入成本
+        result.profit = currentSellValue - estimatedCost;
+        
+        // 已实现盈利百分比 = (卖出价格 / 平均买入价格 - 1) * 100
+        const avgBuyPrice = totalCost / holdingAmount / tx.sol_amount * tx.amount; // 估算的平均买入价格
+        result.profit_percentage = tx.price > 0 && avgBuyPrice > 0 
+          ? ((tx.price / avgBuyPrice) - 1) * 100
+          : 0;
         
         // 更新持仓
         holdingAmount -= tx.amount;
-        totalCost = holdingAmount > 0 ? avgPrice * holdingAmount : 0;
+        if (holdingAmount > 0) {
+          // 按比例减少总成本
+          totalCost = totalCost * (1 - tx.amount / (tx.amount + holdingAmount));
+        } else {
+          totalCost = 0;
+        }
       } else {
         result.profit = 0;
         result.profit_percentage = 0;
       }
       
-      // 计算剩余持仓盈利
-      if (holdingAmount > 0) {
-        const avgPrice = totalCost / holdingAmount;
-        result.position_profit = (currentPrice - avgPrice) * holdingAmount;
-        result.position_profit_percentage = ((currentPrice / avgPrice) - 1) * 100;
+      // 剩余持仓盈利计算逻辑同买入
+      if (holdingAmount > 0 && totalCost > 0) {
+        const avgBuyPrice = totalCost / holdingAmount / tx.sol_amount * tx.amount; // 估算的平均买入价格
+        
+        // 当前盈亏比例(百分比) = (当前价格 / 平均买入价格 - 1) * 100
+        result.position_profit_percentage = currentPrice > 0 && avgBuyPrice > 0 
+          ? ((currentPrice / avgBuyPrice) - 1) * 100 
+          : -100;
+        
+        // 买入时SOL金额
+        const remainingSolCost = totalCost;
+        
+        // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
+        const currentSolValue = remainingSolCost * (1 + result.position_profit_percentage / 100);
+        
+        // 盈亏SOL金额 = 当前价值 - 买入SOL金额
+        result.position_profit = currentSolValue - remainingSolCost;
       } else {
         result.position_profit = 0;
         result.position_profit_percentage = 0;
