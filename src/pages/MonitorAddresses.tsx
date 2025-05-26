@@ -8,6 +8,7 @@ import StatusBadge from '../components/ui/StatusBadge';
 import AddressDisplay from '../components/ui/AddressDisplay';
 import PriceDisplay from '../components/ui/PriceDisplay';
 import UsdPriceDisplay from '../components/ui/UsdPriceDisplay';
+import TransactionRow from '../components/TransactionRow';
 import Spinner from '../components/ui/Spinner';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -1269,91 +1270,12 @@ export default function MonitorAddresses() {
                     </thead>
                     <tbody>
                       {processedTransactions.map((tx, index) => (
-                        <tr
+                        <TransactionRow 
                           key={tx.signature + index}
-                          className="border-b border-gray-700 hover:bg-gray-800/50"
-                        >
-                          <td className="px-4 py-3 text-sm">
-                            {formatDatetime(tx.timestamp)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`font-medium ${tx.tx_type.toLowerCase().includes('buy') ? 'text-success-500' : 'text-error-500'}`}>
-                              {getTransactionTypeText(tx.tx_type)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <AddressDisplay address={tx.token_address} />
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="font-mono">
-                              {formatNumber(tx.amount / 1000000)}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="font-mono">
-                              {tx.sol_amount.toLocaleString(undefined, { 
-                                minimumFractionDigits: 6, 
-                                maximumFractionDigits: 6 
-                              })}
-                            </div>
-                            <div className="text-xs text-success-500">
-                              {calculateUsdValue(tx.sol_amount, solPrice)}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div>
-                              <PriceDisplay price={tx.price} />
-                            </div>
-                            {solPrice > 0 && (
-                              <div className="text-xs text-success-500">
-                                <UsdPriceDisplay price={calculateTokenPriceUsd(tx.price, solPrice)} />
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {tx.current_price !== undefined ? (
-                              <div>
-                                <div>
-                                  <PriceDisplay price={tx.current_price} />
-                                </div>
-                                {solPrice > 0 && (
-                                  <div className="text-xs text-success-500">
-                                    <UsdPriceDisplay price={calculateTokenPriceUsd(tx.current_price, solPrice)} />
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">未获取</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className={`font-medium ${(tx.position_profit_percentage || 0) >= 0 ? 'text-success-500' : 'text-error-500'}`}>
-                              {formatProfitPercentage(tx.position_profit_percentage)}
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              {formatProfit(tx.position_profit)}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {tx.tx_type.toLowerCase().includes('sell') && (
-                              <>
-                                <div className={`font-medium ${(tx.profit_percentage || 0) >= 0 ? 'text-success-500' : 'text-error-500'}`}>
-                                  {formatProfitPercentage(tx.profit_percentage)}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                  {formatProfit(tx.profit)}
-                                </div>
-                              </>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <StatusBadge
-                              status={tx.status === 'confirmed' ? 'success' : tx.status === 'pending' ? 'warning' : 'error'}
-                              text={tx.status === 'confirmed' ? '已确认' : tx.status === 'pending' ? '处理中' : '失败'}
-                              size="sm"
-                            />
-                          </td>
-                        </tr>
+                          tx={tx}
+                          solPrice={solPrice}
+                          index={index}
+                        />
                       ))}
                     </tbody>
                   </table>
