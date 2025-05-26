@@ -377,6 +377,7 @@ export const connectWebSocket = (url: string): void => {
     // 接收消息
     wsInstance.onmessage = (event) => {
       try {
+        // 解析消息数据
         const data = JSON.parse(event.data);
         
         // 更新统计信息 - 接收消息
@@ -391,11 +392,25 @@ export const connectWebSocket = (url: string): void => {
           return;
         }
         
-        // 更新价格缓存
-        if (data.token && data.price !== undefined) {
-          tokenPriceCache[data.token] = data.price;
-          // 发出价格更新事件
-          priceEventEmitter.emit(WebSocketEvents.TOKEN_PRICE, data);
+        // 价格更新消息处理
+        if (data.type === 'price_update' && data.token && data.price !== undefined) {
+          // 检查价格是否有变化
+          const oldPrice = tokenPriceCache[data.token];
+          if (oldPrice !== data.price) {
+            console.log(`价格更新: ${data.token.substring(0, 8)}... ${oldPrice} -> ${data.price}`);
+            
+            // 更新缓存
+            tokenPriceCache[data.token] = data.price;
+            
+            // 发出价格更新事件
+            priceEventEmitter.emit(WebSocketEvents.TOKEN_PRICE, {
+              token: data.token,
+              price: data.price,
+              oldPrice: oldPrice
+            });
+          }
+          
+          // 额外发送消息事件
           priceEventEmitter.emit(WebSocketEvents.MESSAGE, data);
         }
       } catch (error) {
@@ -543,7 +558,12 @@ export const getWebSocketStats = (): WebSocketStats => {
  * @returns 代币价格，如果没有则返回0
  */
 export const getTokenPrice = (tokenAddress: string): number => {
-  return tokenPriceCache[tokenAddress] || 0;
+  const price = tokenPriceCache[tokenAddress] || 0;
+  // 仅在调试时启用，避免过度日志
+  // if (tokenAddress && tokenAddress.length > 8 && price > 0) {
+  //   console.log(`获取代币 ${tokenAddress.substring(0, 8)}... 的缓存价格: ${price}`);
+  // }
+  return price;
 };
 
 /**

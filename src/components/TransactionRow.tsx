@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Transaction } from '../types';
 import { formatNumber, formatProfit, formatProfitPercentage, calculateUsdValue, calculateTokenPriceUsd } from '../utils/profit';
 import { format } from 'date-fns';
@@ -18,20 +18,27 @@ interface TransactionRowProps {
  * 交易记录行组件，使用hooks实时监听代币价格
  */
 const TransactionRow: React.FC<TransactionRowProps> = ({ tx, solPrice, index }) => {
-  // 直接监听这个特定代币的价格
-  const currentPrice = useTokenPrice(tx.token_address);
+  // 监听当前市场价格 (通过WebSocket实时更新)
+  const currentMarketPrice = useTokenPrice(tx.token_address);
   
-  // 记录价格变化（调试用）
+  // 添加本地状态存储当前市场价格，确保UI能响应价格变化
+  const [localCurrentPrice, setLocalCurrentPrice] = useState<number>(currentMarketPrice || 0);
+  
+  // 固定的交易价格 (从交易记录API获取的历史价格，不变)
+  const transactionPrice = tx.price;
+  
+  // 当市场价格更新时，更新本地状态
   useEffect(() => {
-    if (currentPrice > 0 && currentPrice !== tx.current_price) {
-      console.log(`[${tx.token_address.substring(0, 8)}] 价格已更新: ${tx.current_price} -> ${currentPrice}`);
+    if (currentMarketPrice > 0 && currentMarketPrice !== localCurrentPrice) {
+      console.log(`[${tx.token_address.substring(0, 8)}] 当前市场价格已更新: ${localCurrentPrice} -> ${currentMarketPrice}`);
+      setLocalCurrentPrice(currentMarketPrice);
     }
-  }, [currentPrice, tx.current_price, tx.token_address]);
-
+  }, [currentMarketPrice, localCurrentPrice, tx.token_address]);
+  
   // 本地计算盈利
   const profitData = useMemo(() => {
-    // 如果没有获取到价格，返回默认值
-    if (!currentPrice) {
+    // 如果没有获取到当前市场价格，返回默认值
+    if (!localCurrentPrice) {
       return {
         percentage: tx.position_profit_percentage || 0,
         profit: tx.position_profit || 0
@@ -40,11 +47,11 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, solPrice, index }) 
     
     // 买入交易计算当前持仓盈利
     if (tx.tx_type.toLowerCase().includes('buy')) {
-      const buyPrice = tx.price;
+      const buyPrice = transactionPrice;
       if (buyPrice <= 0) return { percentage: 0, profit: 0 };
       
-      // 计算盈利百分比
-      const percentage = ((currentPrice / buyPrice) - 1) * 100;
+      // 计算盈利百分比 = (当前价格/买入价格 - 1) * 100%
+      const percentage = ((localCurrentPrice / buyPrice) - 1) * 100;
       
       // 买入时SOL金额
       const buyInSolAmount = tx.sol_amount;
@@ -63,7 +70,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, solPrice, index }) 
       percentage: tx.position_profit_percentage || 0,
       profit: tx.position_profit || 0
     };
-  }, [tx, currentPrice]);
+  }, [tx, localCurrentPrice, transactionPrice]);
   
   // 格式化日期时间
   const formatDatetime = (isoString: string) => {
@@ -111,23 +118,23 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, solPrice, index }) 
       </td>
       <td className="px-4 py-3 text-right">
         <div>
-          <PriceDisplay price={tx.price} />
+          <PriceDisplay price={transactionPrice} />
         </div>
         {solPrice > 0 && (
           <div className="text-xs text-success-500">
-            <UsdPriceDisplay price={calculateTokenPriceUsd(tx.price, solPrice)} />
+            <UsdPriceDisplay price={calculateTokenPriceUsd(transactionPrice, solPrice)} />
           </div>
         )}
       </td>
       <td className="px-4 py-3 text-right">
-        {currentPrice ? (
+        {localCurrentPrice > 0 ? (
           <div>
             <div>
-              <PriceDisplay price={currentPrice} />
+              <PriceDisplay price={localCurrentPrice} />
             </div>
             {solPrice > 0 && (
               <div className="text-xs text-success-500">
-                <UsdPriceDisplay price={calculateTokenPriceUsd(currentPrice, solPrice)} />
+                <UsdPriceDisplay price={calculateTokenPriceUsd(localCurrentPrice, solPrice)} />
               </div>
             )}
           </div>
