@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Download, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'lucide-react';
 import { getTransactions, getSolPrice, PriceSource } from '../services/api';
 import { TransactionsResponse, Transaction } from '../types';
-import { addWebSocketListener, removeWebSocketListener, WebSocketEvents } from '../services/websocket';
+import { addWebSocketListener, removeWebSocketListener, WebSocketEvents, getTokenPrice } from '../services/websocket';
 import { calculateTransactionsProfits, formatProfit, formatProfitPercentage, formatNumber, calculateUsdValue, calculateTokenPriceUsd } from '../utils/profit';
 import Spinner from '../components/ui/Spinner';
 import AddressDisplay from '../components/ui/AddressDisplay';
@@ -12,9 +12,6 @@ import UsdPriceDisplay from '../components/ui/UsdPriceDisplay';
 import TransactionRow from '../components/TransactionRow';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-
-// 代币价格缓存
-const tokenPriceCache: Record<string, number> = {};
 
 export default function TransactionHistory() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -31,82 +28,100 @@ export default function TransactionHistory() {
   const [solPrice, setSolPrice] = useState<number>(0);
   const [loadingPrice, setLoadingPrice] = useState(false);
 
-  // 初始化WebSocket连接监听
-  useEffect(() => {
-    // 监听WebSocket事件
-    const handleConnected = () => {
-      setWsConnected(true);
-      wsConnectedRef.current = true;
-      toast.success('价格更新服务已连接');
-    };
+  // 监听WebSocket事件
+  const handleConnected = () => {
+    setWsConnected(true);
+    wsConnectedRef.current = true;
+    toast.success('价格更新服务已连接');
+  };
 
-    const handleDisconnected = () => {
-      setWsConnected(false);
-      wsConnectedRef.current = false;
-      toast.error('价格更新服务已断开');
-    };
+  const handleDisconnected = () => {
+    setWsConnected(false);
+    wsConnectedRef.current = false;
+    toast.error('价格更新服务已断开');
+  };
 
-    // 处理代币价格更新
-    const handleTokenPriceMessage = (data: any) => {
-      // 处理不同格式的价格消息
-      // 1. {type: 'token_price', token: '...', price: ...} 格式
-      // 2. {price: ..., token: '...'} 格式 (直接从WebSocket收到)
-      if ((data.type === 'token_price' && data.token && data.price !== undefined) || 
-          (!data.type && data.token && data.price !== undefined)) {
-        
-        const tokenAddress = data.token.toLowerCase();
-        const price = parseFloat(data.price);
-        
-        // 打印接收到的代币信息
-        console.log(`接收到代币价格更新: ${tokenAddress} = ${price}`);
-        
-        // 更新缓存
-        tokenPriceCache[tokenAddress] = price;
-        
-        // 如果当前有交易记录，尝试匹配并更新
-        if (transactionsRef.current.length > 0) {
-          // 检查是否有匹配的代币地址
-          const hasMatchingToken = transactionsRef.current.some(tx => {
-            const txTokenAddress = tx.token_address.toLowerCase();
-            
-            // 精确匹配
-            if (txTokenAddress === tokenAddress) {
-              return true;
-            }
-            
-            // pump后缀匹配
-            if (txTokenAddress.endsWith('pump') && tokenAddress === txTokenAddress.slice(0, -4)) {
-              return true;
-            }
-            
-            if (!txTokenAddress.endsWith('pump') && tokenAddress === txTokenAddress + 'pump') {
-              return true;
-            }
-            
-            // 部分匹配（前8个字符）
-            if (txTokenAddress.startsWith(tokenAddress.substring(0, 8)) ||
-                tokenAddress.startsWith(txTokenAddress.substring(0, 8))) {
-              return true;
-            }
-            
-            return false;
-          });
+  // 处理代币价格更新
+  const handleTokenPriceMessage = (data: any) => {
+    // 处理不同格式的价格消息
+    // 1. {type: 'token_price', token: '...', price: ...} 格式
+    // 2. {price: ..., token: '...'} 格式 (直接从WebSocket收到)
+    if ((data.type === 'token_price' && data.token && data.price !== undefined) || 
+        (!data.type && data.token && data.price !== undefined)) {
+      
+      const tokenAddress = data.token.toLowerCase();
+      const price = parseFloat(data.price);
+      
+      // 打印接收到的代币信息
+      console.log(`接收到代币价格更新: ${tokenAddress} = ${price}`);
+      
+      // websocket服务会自动更新缓存，这里不需要手动更新
+      // tokenPriceCache[tokenAddress] = price;
+      
+      // 如果当前有交易记录，尝试匹配并更新
+      if (transactionsRef.current.length > 0) {
+        // 检查是否有匹配的代币地址
+        const hasMatchingToken = transactionsRef.current.some(tx => {
+          const txTokenAddress = tx.token_address.toLowerCase();
           
-          if (hasMatchingToken) {
-            console.log(`找到匹配的代币: ${tokenAddress}，更新UI...`);
-            updateTransactionsWithPrices();
+          // 精确匹配
+          if (txTokenAddress === tokenAddress) {
+            return true;
           }
+          
+          // pump后缀匹配
+          if (txTokenAddress.endsWith('pump') && tokenAddress === txTokenAddress.slice(0, -4)) {
+            return true;
+          }
+          
+          if (!txTokenAddress.endsWith('pump') && tokenAddress === txTokenAddress + 'pump') {
+            return true;
+          }
+          
+          // 部分匹配（前8个字符）
+          if (txTokenAddress.startsWith(tokenAddress.substring(0, 8)) ||
+              tokenAddress.startsWith(txTokenAddress.substring(0, 8))) {
+            return true;
+          }
+          
+          return false;
+        });
+        
+        if (hasMatchingToken) {
+          console.log(`找到匹配的代币: ${tokenAddress}，更新UI...`);
+          updateTransactionsWithPrices();
         }
       }
-    };
+    }
+  };
 
-    // 获取SOL价格
-    fetchSolPrice();
+  // 获取SOL价格
+  const fetchSolPrice = async () => {
+    try {
+      setLoadingPrice(true);
+      const price = await getSolPrice(PriceSource.OKX);
+      setSolPrice(price);
+      
+      // 更新盈利计算
+      if (transactionsRef.current.length > 0) {
+        updateTransactionsWithPrices();
+      }
+    } catch (error) {
+      console.error('获取SOL价格失败:', error);
+    } finally {
+      setLoadingPrice(false);
+    }
+  };
 
+  // 获取SOL价格
+  useEffect(() => {
+    // 监听WebSocket事件
     addWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
     addWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
     addWebSocketListener(WebSocketEvents.MESSAGE, handleTokenPriceMessage);
 
+    fetchSolPrice();
+    
     // 组件卸载时只移除监听器，不断开连接
     return () => {
       removeWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
@@ -114,55 +129,6 @@ export default function TransactionHistory() {
       removeWebSocketListener(WebSocketEvents.MESSAGE, handleTokenPriceMessage);
     };
   }, []);
-
-  // 获取代币当前价格
-  const getTokenPrice = (tokenAddress: string): number => {
-    if (!tokenAddress) return 0;
-    
-    // 尝试直接匹配
-    const normalizedAddress = tokenAddress.toLowerCase();
-    
-    console.log(`尝试获取代币 ${normalizedAddress} 的价格`);
-    console.log(`当前价格缓存中有 ${Object.keys(tokenPriceCache).length} 个代币`);
-    
-    // 直接匹配
-    if (tokenPriceCache[normalizedAddress]) {
-      console.log(`直接匹配到价格: ${tokenPriceCache[normalizedAddress]}`);
-      return tokenPriceCache[normalizedAddress];
-    }
-    
-    // 尝试用结尾包含"pump"的地址匹配
-    // 有些代币地址在WebSocket响应中会带上"pump"后缀
-    if (normalizedAddress.endsWith('pump')) {
-      // 已经带有pump后缀，去掉它试试
-      const addressWithoutPump = normalizedAddress.slice(0, -4);
-      if (tokenPriceCache[addressWithoutPump]) {
-        console.log(`去掉pump后缀匹配到价格: ${tokenPriceCache[addressWithoutPump]}`);
-        return tokenPriceCache[addressWithoutPump];
-      }
-    } else {
-      // 没有pump后缀，加上试试
-      const addressWithPump = normalizedAddress + 'pump';
-      if (tokenPriceCache[addressWithPump]) {
-        console.log(`添加pump后缀匹配到价格: ${tokenPriceCache[addressWithPump]}`);
-        return tokenPriceCache[addressWithPump];
-      }
-    }
-    
-    // 尝试部分匹配（前8个字符）
-    const matchingKey = Object.keys(tokenPriceCache).find(key => 
-      key.startsWith(normalizedAddress.substring(0, 8)) ||
-      normalizedAddress.startsWith(key.substring(0, 8))
-    );
-    
-    if (matchingKey) {
-      console.log(`部分匹配到价格: ${tokenPriceCache[matchingKey]} (通过 ${matchingKey})`);
-      return tokenPriceCache[matchingKey];
-    }
-    
-    console.log(`未找到代币 ${normalizedAddress} 的价格，返回0`);
-    return 0;
-  };
 
   // 更新交易记录的价格
   const updateTransactionsWithPrices = () => {
@@ -173,7 +139,7 @@ export default function TransactionHistory() {
     // 为每条交易记录设置当前价格
     const updatedTransactions = transactionsRef.current.map(tx => {
       const tokenAddress = tx.token_address;
-      // 使用WebSocket实时价格
+      // 使用导入的WebSocket实时价格
       const websocketPrice = getTokenPrice(tokenAddress);
       
       // 强制使用WebSocket价格，即使为0也使用真实值
@@ -194,24 +160,6 @@ export default function TransactionHistory() {
     const processed = calculateTransactionsProfits(updatedTransactions, solPrice);
     console.log('处理后的交易记录数: ' + processed.length);
     setProcessedTransactions(processed);
-  };
-
-  // 获取SOL价格
-  const fetchSolPrice = async () => {
-    try {
-      setLoadingPrice(true);
-      const price = await getSolPrice(PriceSource.OKX);
-      setSolPrice(price);
-      
-      // 更新盈利计算
-      if (transactionsRef.current.length > 0) {
-        updateTransactionsWithPrices();
-      }
-    } catch (error) {
-      console.error('获取SOL价格失败:', error);
-    } finally {
-      setLoadingPrice(false);
-    }
   };
 
   // 处理交易记录更新

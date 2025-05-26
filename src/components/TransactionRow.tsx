@@ -22,12 +22,12 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, solPrice, index }) 
   
   // 当前价格从Transaction对象中获取 (通过WebSocket实时更新)
   // 重要：这个价格必须是WebSocket更新的真实价格，不做任何调整或兜底
-  const currentPrice = tx.current_price || 0;
+  const currentPrice = tx.current_price !== undefined ? tx.current_price : null;
   
   // 本地计算盈利
   const profitData = useMemo(() => {
     // 如果没有获取到当前市场价格，显示0
-    if (!currentPrice) {
+    if (currentPrice === null || currentPrice === undefined) {
       return {
         percentage: 0,
         profit: 0
@@ -117,7 +117,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, solPrice, index }) 
         )}
       </td>
       <td className="px-4 py-3 text-right">
-        {currentPrice ? (
+        {currentPrice !== null && currentPrice !== undefined ? (
           <div>
             <div>
               <PriceDisplay price={currentPrice} />
