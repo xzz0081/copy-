@@ -13,6 +13,9 @@ import TransactionRow from '../components/TransactionRow';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
+// 代币价格缓存
+const tokenPriceCache: Record<string, number> = {};
+
 export default function TransactionHistory() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [processedTransactions, setProcessedTransactions] = useState<Transaction[]>([]);
@@ -43,11 +46,32 @@ export default function TransactionHistory() {
       toast.error('价格更新服务已断开');
     };
 
-    const handlePriceUpdate = () => {
-      // 价格更新时重新计算盈利
-      if (transactionsRef.current.length > 0) {
-        const processed = calculateTransactionsProfits(transactionsRef.current, solPrice);
-        setProcessedTransactions(processed);
+    // 处理代币价格更新
+    const handleTokenPriceMessage = (data: any) => {
+      if (data.type === 'token_price' && data.token && data.price !== undefined) {
+        const tokenAddress = data.token.toLowerCase();
+        const price = parseFloat(data.price);
+        
+        // 打印接收到的代币信息
+        console.log(`接收到代币价格更新: ${tokenAddress} = ${price}`);
+        
+        // 更新缓存
+        tokenPriceCache[tokenAddress] = price;
+        
+        // 如果当前有交易记录，尝试匹配并更新
+        if (transactionsRef.current.length > 0) {
+          // 检查是否有匹配的代币地址
+          const hasMatchingToken = transactionsRef.current.some(tx => 
+            tx.token_address.toLowerCase() === tokenAddress ||
+            tx.token_address.toLowerCase().startsWith(tokenAddress.substring(0, 8)) ||
+            tokenAddress.startsWith(tx.token_address.toLowerCase().substring(0, 8))
+          );
+          
+          if (hasMatchingToken) {
+            console.log(`找到匹配的代币: ${tokenAddress}，更新UI...`);
+            updateTransactionsWithPrices();
+          }
+        }
       }
     };
 
@@ -56,15 +80,53 @@ export default function TransactionHistory() {
 
     addWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
     addWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
-    addWebSocketListener(WebSocketEvents.TOKEN_PRICE, handlePriceUpdate);
+    addWebSocketListener(WebSocketEvents.MESSAGE, handleTokenPriceMessage);
 
     // 组件卸载时只移除监听器，不断开连接
     return () => {
       removeWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
       removeWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
-      removeWebSocketListener(WebSocketEvents.TOKEN_PRICE, handlePriceUpdate);
+      removeWebSocketListener(WebSocketEvents.MESSAGE, handleTokenPriceMessage);
     };
   }, []);
+
+  // 获取代币当前价格
+  const getTokenPrice = (tokenAddress: string): number => {
+    if (!tokenAddress) return 0;
+    
+    // 尝试直接匹配
+    const normalizedAddress = tokenAddress.toLowerCase();
+    if (tokenPriceCache[normalizedAddress]) {
+      return tokenPriceCache[normalizedAddress];
+    }
+    
+    // 尝试部分匹配（前8个字符）
+    const matchingKey = Object.keys(tokenPriceCache).find(key => 
+      key.startsWith(normalizedAddress.substring(0, 8)) ||
+      normalizedAddress.startsWith(key.substring(0, 8))
+    );
+    
+    if (matchingKey) {
+      return tokenPriceCache[matchingKey];
+    }
+    
+    return 0;
+  };
+
+  // 更新交易记录的价格
+  const updateTransactionsWithPrices = () => {
+    if (transactionsRef.current.length === 0) return;
+    
+    // 为每条交易记录设置当前价格
+    const updatedTransactions = transactionsRef.current.map(tx => {
+      const currentPrice = getTokenPrice(tx.token_address);
+      return { ...tx, current_price: currentPrice };
+    });
+    
+    // 计算盈利情况
+    const processed = calculateTransactionsProfits(updatedTransactions, solPrice);
+    setProcessedTransactions(processed);
+  };
 
   // 获取SOL价格
   const fetchSolPrice = async () => {
@@ -75,8 +137,7 @@ export default function TransactionHistory() {
       
       // 更新盈利计算
       if (transactionsRef.current.length > 0) {
-        const processed = calculateTransactionsProfits(transactionsRef.current, price);
-        setProcessedTransactions(processed);
+        updateTransactionsWithPrices();
       }
     } catch (error) {
       console.error('获取SOL价格失败:', error);
@@ -90,12 +151,30 @@ export default function TransactionHistory() {
     transactionsRef.current = transactions;
     
     if (transactions.length > 0) {
-      const processed = calculateTransactionsProfits(transactions, solPrice);
-      setProcessedTransactions(processed);
+      // 打印交易记录中的代币地址
+      const tokenAddresses = [...new Set(transactions.map(tx => tx.token_address))];
+      console.log(`交易记录中的代币地址: ${tokenAddresses.join(', ')}`);
+      
+      // 更新处理后的交易记录
+      updateTransactionsWithPrices();
     } else {
       setProcessedTransactions([]);
     }
   }, [transactions, solPrice]);
+
+  // 手动刷新价格
+  const refreshPrices = () => {
+    console.log('手动刷新价格和交易记录...');
+    fetchSolPrice();
+    updateTransactionsWithPrices();
+  };
+
+  // 计算美元价值
+  const calculateUsdValue = (tokenPrice: number): string => {
+    if (!solPrice || !tokenPrice) return '$ 0.00';
+    const usdValue = tokenPrice * solPrice * 1000000;
+    return `$ ${usdValue.toFixed(2)}`;
+  };
 
   const fetchTransactions = async (wallet: string, page: number, limit: number) => {
     if (!wallet) return;
@@ -224,25 +303,111 @@ export default function TransactionHistory() {
     return type;
   };
 
+  // TransactionRow组件
+  const TransactionRow = ({ tx, solPrice, index }: { tx: Transaction; solPrice: number; index: number }) => {
+    return (
+      <tr className="border-b border-gray-700 hover:bg-gray-800/50">
+        <td className="px-4 py-3 text-sm">
+          {formatDatetime(tx.timestamp)}
+        </td>
+        <td className="px-4 py-3">
+          <span className={`font-medium ${tx.tx_type.toLowerCase().includes('buy') ? 'text-success-500' : 'text-error-500'}`}>
+            {getTransactionTypeText(tx.tx_type)}
+          </span>
+        </td>
+        <td className="px-4 py-3">
+          <AddressDisplay address={tx.token_address} />
+        </td>
+        <td className="px-4 py-3 text-right font-mono">
+          {(tx.amount / 1000000).toLocaleString(undefined, { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+          })}
+        </td>
+        <td className="px-4 py-3 text-right font-mono">
+          {tx.sol_amount.toLocaleString(undefined, { 
+            minimumFractionDigits: 6, 
+            maximumFractionDigits: 6 
+          })}
+        </td>
+        <td className="px-4 py-3 text-right">
+          <div className="font-mono">{tx.price.toExponential(6)}</div>
+          <div className="font-mono text-xs text-gray-400">
+            {calculateUsdValue(tx.price)}
+          </div>
+        </td>
+        <td className="px-4 py-3 text-right">
+          <div className="font-mono">
+            {tx.current_price ? tx.current_price.toExponential(6) : '-'}
+          </div>
+          {tx.current_price && (
+            <div className="font-mono text-xs text-gray-400">
+              {calculateUsdValue(tx.current_price)}
+            </div>
+          )}
+        </td>
+        <td className="px-4 py-3 text-right">
+          <div className={`font-medium ${(tx.position_profit_percentage || 0) >= 0 ? 'text-success-500' : 'text-error-500'}`}>
+            {formatProfitPercentage(tx.position_profit_percentage)}
+          </div>
+          <div className="text-xs text-gray-400">
+            {formatProfit(tx.position_profit)}
+          </div>
+        </td>
+        <td className="px-4 py-3 text-right">
+          {tx.tx_type.toLowerCase().includes('sell') && (
+            <>
+              <div className={`font-medium ${(tx.profit_percentage || 0) >= 0 ? 'text-success-500' : 'text-error-500'}`}>
+                {formatProfitPercentage(tx.profit_percentage)}
+              </div>
+              <div className="text-xs text-gray-400">
+                {formatProfit(tx.profit)}
+              </div>
+            </>
+          )}
+        </td>
+        <td className="px-4 py-3 text-center">
+          <StatusBadge
+            status={tx.status === 'confirmed' ? 'success' : tx.status === 'pending' ? 'warning' : 'error'}
+            text={tx.status === 'confirmed' ? '已确认' : tx.status === 'pending' ? '处理中' : '失败'}
+            size="sm"
+          />
+        </td>
+      </tr>
+    );
+  };
+
   const totalPages = Math.ceil(totalTransactions / pageSize);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">交易历史</h1>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-400">价格更新:</span>
-          {wsConnected ? (
-            <div className="flex items-center text-success-500">
-              <Wifi className="mr-1 h-4 w-4" />
-              <span className="text-sm">已连接</span>
-            </div>
-          ) : (
-            <div className="flex items-center text-error-500">
-              <WifiOff className="mr-1 h-4 w-4" />
-              <span className="text-sm">未连接</span>
-            </div>
-          )}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center">
+            <span className="text-sm text-gray-400 mr-2">SOL价格:</span>
+            <span className="font-medium">${solPrice.toFixed(2)} USD</span>
+          </div>
+          <button 
+            onClick={refreshPrices}
+            className="btn btn-sm btn-outline"
+          >
+            刷新价格
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400">价格更新:</span>
+            {wsConnected ? (
+              <div className="flex items-center text-success-500">
+                <Wifi className="mr-1 h-4 w-4" />
+                <span className="text-sm">已连接</span>
+              </div>
+            ) : (
+              <div className="flex items-center text-error-500">
+                <WifiOff className="mr-1 h-4 w-4" />
+                <span className="text-sm">未连接</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
