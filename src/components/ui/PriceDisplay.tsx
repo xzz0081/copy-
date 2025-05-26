@@ -22,7 +22,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({ price }) => {
     return (
       <span className="font-mono">
         0.
-        <sub className="text-xs">{zeroCount}</sub>
+        <sub className="text-xs text-error-500">{zeroCount}</sub>
         {significantDigits}
       </span>
     );
@@ -48,7 +48,7 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({ price }) => {
       return (
         <span className="font-mono">
           {intPart}.
-          <sub className="text-xs">{zeroCount}</sub>
+          <sub className="text-xs text-error-500">{zeroCount}</sub>
           {restDigits}
         </span>
       );
