@@ -164,18 +164,18 @@ const calculateTokenProfits = (transactions: Transaction[], currentPrice: number
       
       // 计算盈亏比例
       // 注意：即使currentPrice很小，也直接用于计算，不做任何兜底
-      result.position_profit_percentage = buyPrice > 0 
-        ? ((currentPrice / buyPrice) - 1) * 100 
-        : 0;
-      
-      // 买入时SOL金额
-      const buyInSolAmount = tx.sol_amount;
-      
-      // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
-      const currentSolValue = buyInSolAmount * (1 + result.position_profit_percentage / 100);
-      
-      // 盈亏SOL金额 = 当前价值 - 买入SOL金额
-      result.position_profit = currentSolValue - buyInSolAmount;
+        result.position_profit_percentage = buyPrice > 0 
+          ? ((currentPrice / buyPrice) - 1) * 100 
+          : 0;
+        
+        // 买入时SOL金额
+        const buyInSolAmount = tx.sol_amount;
+        
+        // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
+        const currentSolValue = buyInSolAmount * (1 + result.position_profit_percentage / 100);
+        
+        // 盈亏SOL金额 = 当前价值 - 买入SOL金额
+        result.position_profit = currentSolValue - buyInSolAmount;
     }
     // 卖出交易
     else if (tx.tx_type.toLowerCase().includes('sell')) {
@@ -213,18 +213,18 @@ const calculateTokenProfits = (transactions: Transaction[], currentPrice: number
         const avgBuyPrice = totalCost / holdingAmount / tx.sol_amount * tx.amount; // 估算的平均买入价格
         
         // 计算盈亏比例 - 直接使用currentPrice
-        result.position_profit_percentage = avgBuyPrice > 0 
-          ? ((currentPrice / avgBuyPrice) - 1) * 100 
-          : 0;
-        
-        // 买入时SOL金额
-        const remainingSolCost = totalCost;
-        
-        // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
-        const currentSolValue = remainingSolCost * (1 + result.position_profit_percentage / 100);
-        
-        // 盈亏SOL金额 = 当前价值 - 买入SOL金额
-        result.position_profit = currentSolValue - remainingSolCost;
+          result.position_profit_percentage = avgBuyPrice > 0 
+            ? ((currentPrice / avgBuyPrice) - 1) * 100 
+            : 0;
+          
+          // 买入时SOL金额
+          const remainingSolCost = totalCost;
+          
+          // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
+          const currentSolValue = remainingSolCost * (1 + result.position_profit_percentage / 100);
+          
+          // 盈亏SOL金额 = 当前价值 - 买入SOL金额
+          result.position_profit = currentSolValue - remainingSolCost;
       } else {
         result.position_profit = 0;
         result.position_profit_percentage = 0;

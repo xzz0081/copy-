@@ -19,10 +19,11 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({ price }) => {
     const baseNum = parseFloat(base);
     const significantDigits = baseNum.toString().replace('.', '');
     
+    // 格式化为 0.⁵5 这样的格式（零的个数作为上标）
     return (
       <span className="font-mono">
         0.
-        <sub className="text-xs text-error-500">{zeroCount}</sub>
+        <span className="text-xs text-error-500 align-super">{zeroCount}</span>
         {significantDigits}
       </span>
     );
@@ -45,10 +46,11 @@ const PriceDisplay: React.FC<PriceDisplayProps> = ({ price }) => {
     // 如果有连续的0
     if (zeroCount > 2) {
       const restDigits = decimalPart.substring(zeroCount);
+      // 格式化为 1.⁵678 这样的格式
       return (
         <span className="font-mono">
           {intPart}.
-          <sub className="text-xs text-error-500">{zeroCount}</sub>
+          <span className="text-xs text-error-500 align-super">{zeroCount}</span>
           {restDigits}
         </span>
       );

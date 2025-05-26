@@ -983,7 +983,9 @@ export default function MonitorAddresses() {
                           <div className="flex flex-col">
                             <PriceDisplay price={config.min_price_multiplier} />
                             <span className="text-xs text-success-500">
-                              {solPrice > 0 && calculateUsdValue(config.min_price_multiplier, solPrice)}
+                              {solPrice > 0 && (
+                                <UsdPriceDisplay price={config.min_price_multiplier * solPrice} />
+                              )}
                             </span>
                           </div>
                         )}
@@ -1002,7 +1004,9 @@ export default function MonitorAddresses() {
                           <div className="flex flex-col">
                             <PriceDisplay price={config.max_price_multiplier} />
                             <span className="text-xs text-success-500">
-                              {solPrice > 0 && calculateUsdValue(config.max_price_multiplier, solPrice)}
+                              {solPrice > 0 && (
+                                <UsdPriceDisplay price={config.max_price_multiplier * solPrice} />
+                              )}
                             </span>
                           </div>
                         )}
