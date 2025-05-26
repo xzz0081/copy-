@@ -3,11 +3,12 @@ import { Search, Download, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'luci
 import { getTransactions, getSolPrice, PriceSource } from '../services/api';
 import { TransactionsResponse, Transaction } from '../types';
 import { addWebSocketListener, removeWebSocketListener, WebSocketEvents } from '../services/websocket';
-import { calculateTransactionsProfits, formatProfit, formatProfitPercentage, formatNumber, calculateUsdValue } from '../utils/profit';
+import { calculateTransactionsProfits, formatProfit, formatProfitPercentage, formatNumber, calculateUsdValue, calculateTokenPriceUsd } from '../utils/profit';
 import Spinner from '../components/ui/Spinner';
 import AddressDisplay from '../components/ui/AddressDisplay';
 import StatusBadge from '../components/ui/StatusBadge';
 import PriceDisplay from '../components/ui/PriceDisplay';
+import UsdPriceDisplay from '../components/ui/UsdPriceDisplay';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -380,19 +381,19 @@ export default function TransactionHistory() {
                         </div>
                         {solPrice > 0 && (
                           <div className="text-xs text-success-500">
-                            {calculateUsdValue(tx.price, solPrice)}
+                            <UsdPriceDisplay price={calculateTokenPriceUsd(tx.price, solPrice)} />
                           </div>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {tx.current_price ? (
+                        {tx.current_price !== undefined ? (
                           <div>
                             <div>
                               <PriceDisplay price={tx.current_price} />
                             </div>
                             {solPrice > 0 && (
                               <div className="text-xs text-success-500">
-                                {calculateUsdValue(tx.current_price, solPrice)}
+                                <UsdPriceDisplay price={calculateTokenPriceUsd(tx.current_price, solPrice)} />
                               </div>
                             )}
                           </div>

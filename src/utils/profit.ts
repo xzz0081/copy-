@@ -265,4 +265,15 @@ export const formatProfitPercentage = (percentage: number | undefined): string =
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}%`;
+};
+
+/**
+ * 币本位价格转美元
+ * @param tokenPrice 币本位价格（单位SOL）
+ * @param solPrice SOL美元价格
+ * @returns 美元价值
+ */
+export const calculateTokenPriceUsd = (tokenPrice: number, solPrice: number): number => {
+  if (!solPrice || !tokenPrice) return 0;
+  return tokenPrice * solPrice;
 }; 

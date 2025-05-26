@@ -7,10 +7,11 @@ import { MonitorAddressesResponse, WalletConfig, AddWalletRequest, Transaction, 
 import StatusBadge from '../components/ui/StatusBadge';
 import AddressDisplay from '../components/ui/AddressDisplay';
 import PriceDisplay from '../components/ui/PriceDisplay';
+import UsdPriceDisplay from '../components/ui/UsdPriceDisplay';
 import Spinner from '../components/ui/Spinner';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { calculateTransactionsProfits, formatProfit, formatProfitPercentage, formatNumber, calculateUsdValue } from '../utils/profit';
+import { calculateTransactionsProfits, formatProfit, formatProfitPercentage, formatNumber, calculateUsdValue, calculateTokenPriceUsd } from '../utils/profit';
 
 export default function MonitorAddresses() {
   const [addresses, setAddresses] = useState<Record<string, WalletConfig>>({});
@@ -1305,19 +1306,19 @@ export default function MonitorAddresses() {
                             </div>
                             {solPrice > 0 && (
                               <div className="text-xs text-success-500">
-                                {calculateUsdValue(tx.price, solPrice)}
+                                <UsdPriceDisplay price={calculateTokenPriceUsd(tx.price, solPrice)} />
                               </div>
                             )}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            {tx.current_price ? (
+                            {tx.current_price !== undefined ? (
                               <div>
                                 <div>
                                   <PriceDisplay price={tx.current_price} />
                                 </div>
                                 {solPrice > 0 && (
                                   <div className="text-xs text-success-500">
-                                    {calculateUsdValue(tx.current_price, solPrice)}
+                                    <UsdPriceDisplay price={calculateTokenPriceUsd(tx.current_price, solPrice)} />
                                   </div>
                                 )}
                               </div>
