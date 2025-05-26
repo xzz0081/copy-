@@ -32,6 +32,9 @@ export const calculateTransactionsProfits = (transactions: Transaction[]): Trans
     // 获取当前代币价格
     const currentPrice = getTokenPrice(tokenAddress);
     
+    // 输出日志，检查价格获取情况
+    console.log(`计算代币 ${tokenAddress.substring(0, 8)}... 的盈利 - 当前价格: ${currentPrice}, 交易数量: ${txs.length}`);
+    
     // 计算各项盈利数据
     const calculatedTxs = calculateTokenProfits(txs, currentPrice);
     result.push(...calculatedTxs);
@@ -68,19 +71,27 @@ const calculateTokenProfits = (transactions: Transaction[], currentPrice: number
       // 计算持仓盈利 - 对比买入时价格与当前价格
       const buyPrice = tx.price; // token本位价格
       
-      // 当前盈亏比例(百分比) = (当前价格 / 买入价格 - 1) * 100
-      result.position_profit_percentage = currentPrice > 0 && buyPrice > 0 
-        ? ((currentPrice / buyPrice) - 1) * 100 
-        : -100; // 如果当前价格为0，则视为亏损100%
-      
-      // 买入时SOL金额
-      const buyInSolAmount = tx.sol_amount;
-      
-      // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
-      const currentSolValue = buyInSolAmount * (1 + result.position_profit_percentage / 100);
-      
-      // 盈亏SOL金额 = 当前价值 - 买入SOL金额
-      result.position_profit = currentSolValue - buyInSolAmount;
+      // 当WebSocket未连接或无法获取当前价格时
+      if (currentPrice <= 0) {
+        // 使用买入价格作为当前价格（显示为0%盈亏）
+        result.position_profit_percentage = 0;
+        result.position_profit = 0;
+        result.current_price = buyPrice; // 设置当前价格等于买入价格
+      } else {
+        // 当前盈亏比例(百分比) = (当前价格 / 买入价格 - 1) * 100
+        result.position_profit_percentage = buyPrice > 0 
+          ? ((currentPrice / buyPrice) - 1) * 100 
+          : 0;
+        
+        // 买入时SOL金额
+        const buyInSolAmount = tx.sol_amount;
+        
+        // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
+        const currentSolValue = buyInSolAmount * (1 + result.position_profit_percentage / 100);
+        
+        // 盈亏SOL金额 = 当前价值 - 买入SOL金额
+        result.position_profit = currentSolValue - buyInSolAmount;
+      }
     }
     // 卖出交易
     else if (tx.tx_type.toLowerCase().includes('sell')) {
@@ -117,19 +128,27 @@ const calculateTokenProfits = (transactions: Transaction[], currentPrice: number
       if (holdingAmount > 0 && totalCost > 0) {
         const avgBuyPrice = totalCost / holdingAmount / tx.sol_amount * tx.amount; // 估算的平均买入价格
         
-        // 当前盈亏比例(百分比) = (当前价格 / 平均买入价格 - 1) * 100
-        result.position_profit_percentage = currentPrice > 0 && avgBuyPrice > 0 
-          ? ((currentPrice / avgBuyPrice) - 1) * 100 
-          : -100;
-        
-        // 买入时SOL金额
-        const remainingSolCost = totalCost;
-        
-        // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
-        const currentSolValue = remainingSolCost * (1 + result.position_profit_percentage / 100);
-        
-        // 盈亏SOL金额 = 当前价值 - 买入SOL金额
-        result.position_profit = currentSolValue - remainingSolCost;
+        // 当WebSocket未连接或无法获取当前价格时
+        if (currentPrice <= 0) {
+          // 使用平均买入价格作为当前价格（显示为0%盈亏）
+          result.position_profit_percentage = 0;
+          result.position_profit = 0;
+          result.current_price = avgBuyPrice; // 设置当前价格等于平均买入价格
+        } else {
+          // 当前盈亏比例(百分比) = (当前价格 / 平均买入价格 - 1) * 100
+          result.position_profit_percentage = avgBuyPrice > 0 
+            ? ((currentPrice / avgBuyPrice) - 1) * 100 
+            : 0;
+          
+          // 买入时SOL金额
+          const remainingSolCost = totalCost;
+          
+          // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
+          const currentSolValue = remainingSolCost * (1 + result.position_profit_percentage / 100);
+          
+          // 盈亏SOL金额 = 当前价值 - 买入SOL金额
+          result.position_profit = currentSolValue - remainingSolCost;
+        }
       } else {
         result.position_profit = 0;
         result.position_profit_percentage = 0;

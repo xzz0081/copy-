@@ -219,6 +219,16 @@ export default function TransactionHistory() {
         </div>
       </div>
 
+      {!wsConnected && (
+        <div className="bg-error-500/10 border border-error-500 text-error-500 rounded-md p-3 mb-4 flex items-center">
+          <WifiOff className="h-5 w-5 mr-2" />
+          <div>
+            <p className="font-medium">价格更新服务未连接</p>
+            <p className="text-sm">持仓盈利计算将使用交易价格代替当前市场价格</p>
+          </div>
+        </div>
+      )}
+
       <div className="card space-y-4">
         <div className="flex flex-col gap-4 md:flex-row md:items-end">
           <div className="flex-1 space-y-2">
@@ -339,7 +349,9 @@ export default function TransactionHistory() {
                         {tx.price.toExponential(6)}
                       </td>
                       <td className="px-4 py-3 text-right font-mono">
-                        {tx.current_price ? tx.current_price.toExponential(6) : '-'}
+                        {tx.current_price ? tx.current_price.toExponential(6) : (
+                          <span className="text-gray-400">未获取</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className={`font-medium ${(tx.position_profit_percentage || 0) >= 0 ? 'text-success-500' : 'text-error-500'}`}>
