@@ -2,11 +2,91 @@ import { Transaction } from '../types';
 import { getTokenPrice } from '../services/websocket';
 
 /**
+ * 格式化大数，使用K、M、B等单位
+ * @param num 要格式化的数字
+ * @param digits 保留小数位数
+ * @returns 格式化后的字符串
+ */
+export const formatNumber = (num: number, digits = 2): string => {
+  if (num === 0) return '0';
+  
+  const units = ['', 'K', 'M', 'B', 'T'];
+  const unit = Math.floor(Math.log10(Math.abs(num)) / 3);
+  
+  if (unit === 0 || isNaN(unit)) return num.toFixed(digits);
+  
+  const formattedNum = (num / Math.pow(1000, unit)).toFixed(digits);
+  return `${formattedNum}${units[unit]}`;
+};
+
+/**
+ * 格式化价格，避免使用科学计数法
+ * @param price 价格
+ * @returns 格式化后的价格字符串
+ */
+export const formatPrice = (price: number): string => {
+  if (!price) return '0';
+  
+  // 处理科学计数法的数值
+  const priceStr = price.toString();
+  
+  if (priceStr.includes('e-')) {
+    const [base, exponent] = priceStr.split('e-');
+    const zeroCount = parseInt(exponent) - 1;
+    const baseNum = parseFloat(base);
+    const significantDigits = baseNum.toString().replace('.', '');
+    
+    // 返回格式化后的字符串，不使用JSX
+    return `0.[$${zeroCount}]${significantDigits}`;
+  }
+  
+  // 处理普通数值
+  if (priceStr.includes('.')) {
+    const [intPart, decimalPart] = priceStr.split('.');
+    
+    // 计算小数点后连续的0的数量
+    let zeroCount = 0;
+    for (let i = 0; i < decimalPart.length; i++) {
+      if (decimalPart[i] === '0') {
+        zeroCount++;
+      } else {
+        break;
+      }
+    }
+    
+    // 如果有连续的0
+    if (zeroCount > 2) {
+      const restDigits = decimalPart.substring(zeroCount);
+      // 返回格式化后的字符串，不使用JSX
+      return `${intPart}.[$${zeroCount}]${restDigits}`;
+    }
+  }
+  
+  return priceStr;
+};
+
+/**
+ * 计算美元价值
+ * @param solAmount SOL数量
+ * @param solPrice SOL价格（美元）
+ * @returns 美元价值字符串
+ */
+export const calculateUsdValue = (solAmount: number, solPrice: number): string => {
+  if (!solPrice || !solAmount) return '$ 0.00';
+  const usdValue = solAmount * solPrice;
+  
+  if (usdValue < 0.01) return '< $0.01';
+  
+  return `$ ${usdValue.toFixed(2)}`;
+};
+
+/**
  * 计算交易记录的盈利情况
  * @param transactions 交易记录列表
+ * @param solPrice SOL价格（美元）
  * @returns 计算后的交易记录列表
  */
-export const calculateTransactionsProfits = (transactions: Transaction[]): Transaction[] => {
+export const calculateTransactionsProfits = (transactions: Transaction[], solPrice = 0): Transaction[] => {
   if (!transactions || transactions.length === 0) return [];
 
   // 按照代币地址分组，每个代币单独计算持仓盈利

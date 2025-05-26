@@ -6,10 +6,11 @@ import { connectWebSocket, disconnectWebSocket, addWebSocketListener, removeWebS
 import { MonitorAddressesResponse, WalletConfig, AddWalletRequest, Transaction, TransactionsResponse } from '../types';
 import StatusBadge from '../components/ui/StatusBadge';
 import AddressDisplay from '../components/ui/AddressDisplay';
+import PriceDisplay from '../components/ui/PriceDisplay';
 import Spinner from '../components/ui/Spinner';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { calculateTransactionsProfits, formatProfit, formatProfitPercentage } from '../utils/profit';
+import { calculateTransactionsProfits, formatProfit, formatProfitPercentage, formatNumber, calculateUsdValue } from '../utils/profit';
 
 export default function MonitorAddresses() {
   const [addresses, setAddresses] = useState<Record<string, WalletConfig>>({});
@@ -440,64 +441,10 @@ export default function MonitorAddresses() {
   };
 
   // 计算美元价值
-  const calculateUsdValue = (solAmount: number): string => {
-    if (!solPrice || !solAmount) return '$ 0.00';
-    const usdValue = solAmount * solPrice;
+  const calculateUsdValue = (solAmount: number, price: number): string => {
+    if (!price || !solAmount) return '$ 0.00';
+    const usdValue = solAmount * price;
     return `$ ${usdValue.toFixed(2)}`;
-  };
-
-  // 格式化小数，将连续的0以上标形式显示
-  const formatDecimal = (value: number): React.ReactNode => {
-    if (!value) return '0';
-    
-    // 转换为字符串
-    const valueStr = value.toString();
-    
-    // 对于科学记数法的数字，进行特殊处理
-    if (valueStr.includes('e-')) {
-      const [base, exponent] = valueStr.split('e-');
-      const zeroCount = parseInt(exponent) - 1;
-      const baseNum = parseFloat(base);
-      const significantDigits = baseNum.toString().replace('.', '');
-      
-      return (
-        <span className="font-mono">
-          0.
-          <sub className="text-xs">{zeroCount}</sub>
-          {significantDigits}
-        </span>
-      );
-    }
-    
-    // 对于普通小数
-    if (valueStr.includes('.')) {
-      const [intPart, decimalPart] = valueStr.split('.');
-      
-      // 计算小数点后连续的0的数量
-      let zeroCount = 0;
-      for (let i = 0; i < decimalPart.length; i++) {
-        if (decimalPart[i] === '0') {
-          zeroCount++;
-        } else {
-          break;
-        }
-      }
-      
-      // 如果有连续的0
-      if (zeroCount > 2) {
-        const restDigits = decimalPart.substring(zeroCount);
-        return (
-          <span className="font-mono">
-            {intPart}.
-            <sub className="text-xs">{zeroCount}</sub>
-            {restDigits}
-          </span>
-        );
-      }
-    }
-    
-    // 其他情况直接返回原值
-    return <span className="font-mono">{valueStr}</span>;
   };
 
   // 格式化最后更新时间
@@ -1032,9 +979,9 @@ export default function MonitorAddresses() {
                           />
                         ) : (
                           <div className="flex flex-col">
-                            {formatDecimal(config.min_price_multiplier)}
+                            <PriceDisplay price={config.min_price_multiplier} />
                             <span className="text-xs text-success-500">
-                              {solPrice > 0 && `$ ${(config.min_price_multiplier * solPrice).toFixed(6)}`}
+                              {solPrice > 0 && calculateUsdValue(config.min_price_multiplier, solPrice)}
                             </span>
                           </div>
                         )}
@@ -1051,9 +998,9 @@ export default function MonitorAddresses() {
                           />
                         ) : (
                           <div className="flex flex-col">
-                            {formatDecimal(config.max_price_multiplier)}
+                            <PriceDisplay price={config.max_price_multiplier} />
                             <span className="text-xs text-success-500">
-                              {solPrice > 0 && `$ ${(config.max_price_multiplier * solPrice).toFixed(6)}`}
+                              {solPrice > 0 && calculateUsdValue(config.max_price_multiplier, solPrice)}
                             </span>
                           </div>
                         )}
@@ -1097,7 +1044,7 @@ export default function MonitorAddresses() {
                         ) : (
                           <div className="flex flex-col">
                             <span>{config.sol_amount_min}</span>
-                            <span className="text-xs text-success-500">{calculateUsdValue(config.sol_amount_min)}</span>
+                            <span className="text-xs text-success-500">{calculateUsdValue(config.sol_amount_min, solPrice)}</span>
                           </div>
                         )}
                       </td>
@@ -1114,7 +1061,7 @@ export default function MonitorAddresses() {
                         ) : (
                           <div className="flex flex-col">
                             <span>{config.sol_amount_max}</span>
-                            <span className="text-xs text-success-500">{calculateUsdValue(config.sol_amount_max)}</span>
+                            <span className="text-xs text-success-500">{calculateUsdValue(config.sol_amount_max, solPrice)}</span>
                           </div>
                         )}
                       </td>
@@ -1336,23 +1283,47 @@ export default function MonitorAddresses() {
                           <td className="px-4 py-3">
                             <AddressDisplay address={tx.token_address} />
                           </td>
-                          <td className="px-4 py-3 text-right font-mono">
-                            {(tx.amount / 1000000).toLocaleString(undefined, { 
-                              minimumFractionDigits: 2, 
-                              maximumFractionDigits: 2 
-                            })}
+                          <td className="px-4 py-3 text-right">
+                            <div className="font-mono">
+                              {formatNumber(tx.amount / 1000000)}
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-right font-mono">
-                            {tx.sol_amount.toLocaleString(undefined, { 
-                              minimumFractionDigits: 6, 
-                              maximumFractionDigits: 6 
-                            })}
+                          <td className="px-4 py-3 text-right">
+                            <div className="font-mono">
+                              {tx.sol_amount.toLocaleString(undefined, { 
+                                minimumFractionDigits: 6, 
+                                maximumFractionDigits: 6 
+                              })}
+                            </div>
+                            <div className="text-xs text-success-500">
+                              {calculateUsdValue(tx.sol_amount, solPrice)}
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-right font-mono">
-                            {tx.price.toExponential(6)}
+                          <td className="px-4 py-3 text-right">
+                            <div>
+                              <PriceDisplay price={tx.price} />
+                            </div>
+                            {solPrice > 0 && (
+                              <div className="text-xs text-success-500">
+                                {calculateUsdValue(tx.price, solPrice)}
+                              </div>
+                            )}
                           </td>
-                          <td className="px-4 py-3 text-right font-mono">
-                            {tx.current_price ? tx.current_price.toExponential(6) : '-'}
+                          <td className="px-4 py-3 text-right">
+                            {tx.current_price ? (
+                              <div>
+                                <div>
+                                  <PriceDisplay price={tx.current_price} />
+                                </div>
+                                {solPrice > 0 && (
+                                  <div className="text-xs text-success-500">
+                                    {calculateUsdValue(tx.current_price, solPrice)}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">未获取</span>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className={`font-medium ${(tx.position_profit_percentage || 0) >= 0 ? 'text-success-500' : 'text-error-500'}`}>

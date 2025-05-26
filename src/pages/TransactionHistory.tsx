@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Download, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'lucide-react';
-import { getTransactions } from '../services/api';
+import { getTransactions, getSolPrice, PriceSource } from '../services/api';
 import { TransactionsResponse, Transaction } from '../types';
 import { addWebSocketListener, removeWebSocketListener, WebSocketEvents } from '../services/websocket';
-import { calculateTransactionsProfits, formatProfit, formatProfitPercentage } from '../utils/profit';
+import { calculateTransactionsProfits, formatProfit, formatProfitPercentage, formatNumber, calculateUsdValue } from '../utils/profit';
 import Spinner from '../components/ui/Spinner';
 import AddressDisplay from '../components/ui/AddressDisplay';
 import StatusBadge from '../components/ui/StatusBadge';
+import PriceDisplay from '../components/ui/PriceDisplay';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -22,6 +23,8 @@ export default function TransactionHistory() {
   const [wsConnected, setWsConnected] = useState(false);
   const wsConnectedRef = useRef(wsConnected);
   const transactionsRef = useRef(transactions);
+  const [solPrice, setSolPrice] = useState<number>(0);
+  const [loadingPrice, setLoadingPrice] = useState(false);
 
   // 初始化WebSocket连接监听
   useEffect(() => {
@@ -41,10 +44,13 @@ export default function TransactionHistory() {
     const handlePriceUpdate = () => {
       // 价格更新时重新计算盈利
       if (transactionsRef.current.length > 0) {
-        const processed = calculateTransactionsProfits(transactionsRef.current);
+        const processed = calculateTransactionsProfits(transactionsRef.current, solPrice);
         setProcessedTransactions(processed);
       }
     };
+
+    // 获取SOL价格
+    fetchSolPrice();
 
     addWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
     addWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
@@ -58,17 +64,36 @@ export default function TransactionHistory() {
     };
   }, []);
 
+  // 获取SOL价格
+  const fetchSolPrice = async () => {
+    try {
+      setLoadingPrice(true);
+      const price = await getSolPrice(PriceSource.OKX);
+      setSolPrice(price);
+      
+      // 更新盈利计算
+      if (transactionsRef.current.length > 0) {
+        const processed = calculateTransactionsProfits(transactionsRef.current, price);
+        setProcessedTransactions(processed);
+      }
+    } catch (error) {
+      console.error('获取SOL价格失败:', error);
+    } finally {
+      setLoadingPrice(false);
+    }
+  };
+
   // 处理交易记录更新
   useEffect(() => {
     transactionsRef.current = transactions;
     
     if (transactions.length > 0) {
-      const processed = calculateTransactionsProfits(transactions);
+      const processed = calculateTransactionsProfits(transactions, solPrice);
       setProcessedTransactions(processed);
     } else {
       setProcessedTransactions([]);
     }
-  }, [transactions]);
+  }, [transactions, solPrice]);
 
   const fetchTransactions = async (wallet: string, page: number, limit: number) => {
     if (!wallet) return;
@@ -333,23 +358,45 @@ export default function TransactionHistory() {
                       <td className="px-4 py-3">
                         <AddressDisplay address={tx.token_address} />
                       </td>
-                      <td className="px-4 py-3 text-right font-mono">
-                        {(tx.amount / 1000000).toLocaleString(undefined, { 
-                          minimumFractionDigits: 2, 
-                          maximumFractionDigits: 2 
-                        })}
+                      <td className="px-4 py-3 text-right">
+                        <div className="font-mono">
+                          {formatNumber(tx.amount / 1000000)}
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-right font-mono">
-                        {tx.sol_amount.toLocaleString(undefined, { 
-                          minimumFractionDigits: 6, 
-                          maximumFractionDigits: 6 
-                        })}
+                      <td className="px-4 py-3 text-right">
+                        <div className="font-mono">
+                          {tx.sol_amount.toLocaleString(undefined, { 
+                            minimumFractionDigits: 6, 
+                            maximumFractionDigits: 6 
+                          })}
+                        </div>
+                        <div className="text-xs text-success-500">
+                          {calculateUsdValue(tx.sol_amount, solPrice)}
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-right font-mono">
-                        {tx.price.toExponential(6)}
+                      <td className="px-4 py-3 text-right">
+                        <div>
+                          <PriceDisplay price={tx.price} />
+                        </div>
+                        {solPrice > 0 && (
+                          <div className="text-xs text-success-500">
+                            {calculateUsdValue(tx.price, solPrice)}
+                          </div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-right font-mono">
-                        {tx.current_price ? tx.current_price.toExponential(6) : (
+                      <td className="px-4 py-3 text-right">
+                        {tx.current_price ? (
+                          <div>
+                            <div>
+                              <PriceDisplay price={tx.current_price} />
+                            </div>
+                            {solPrice > 0 && (
+                              <div className="text-xs text-success-500">
+                                {calculateUsdValue(tx.current_price, solPrice)}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
                           <span className="text-gray-400">未获取</span>
                         )}
                       </td>
