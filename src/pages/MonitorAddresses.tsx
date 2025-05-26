@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, RefreshCw, Edit, ExternalLink, Plus, DollarSign, Clock, TrendingUp, TrendingDown, Settings, Trash2, History, X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, RefreshCw, Edit, ExternalLink, Plus, DollarSign, Clock, TrendingUp, TrendingDown, Settings, Trash2, History, X, Download, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'lucide-react';
 import { getMonitorAddresses, updateMonitorAddress, addMonitorAddress, getSolPrice, PriceSource, deleteMonitorAddress, getTransactions } from '../services/api';
+import { connectWebSocket, disconnectWebSocket, addWebSocketListener, removeWebSocketListener, WebSocketEvents } from '../services/websocket';
 import { MonitorAddressesResponse, WalletConfig, AddWalletRequest, Transaction, TransactionsResponse } from '../types';
 import StatusBadge from '../components/ui/StatusBadge';
 import AddressDisplay from '../components/ui/AddressDisplay';
 import Spinner from '../components/ui/Spinner';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { calculateTransactionsProfits, formatProfit, formatProfitPercentage } from '../utils/profit';
+
+// WebSocket服务地址
+const WS_URL = 'ws://d19e-2408-8266-5903-f0a-69cf-16a0-ec95-7ff0.ngrok-free.app';
 
 export default function MonitorAddresses() {
   const [addresses, setAddresses] = useState<Record<string, WalletConfig>>({});
@@ -45,10 +50,13 @@ export default function MonitorAddresses() {
   const [showTransactionHistory, setShowTransactionHistory] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState('');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [processedTransactions, setProcessedTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalTransactions, setTotalTransactions] = useState(0);
+  const [wsConnected, setWsConnected] = useState(false);
+  const transactionsRef = useRef(transactions);
 
   // 添加当前时间状态
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -91,6 +99,55 @@ export default function MonitorAddresses() {
     }
     prevPriceRef.current = solPrice;
   }, [solPrice]);
+
+  // 初始化WebSocket连接
+  useEffect(() => {
+    // 连接WebSocket
+    connectWebSocket(WS_URL);
+
+    // 监听WebSocket事件
+    const handleConnected = () => {
+      setWsConnected(true);
+      toast.success('价格更新服务已连接');
+    };
+
+    const handleDisconnected = () => {
+      setWsConnected(false);
+      toast.error('价格更新服务已断开');
+    };
+
+    const handlePriceUpdate = () => {
+      // 价格更新时重新计算盈利
+      if (transactionsRef.current.length > 0) {
+        const processed = calculateTransactionsProfits(transactionsRef.current);
+        setProcessedTransactions(processed);
+      }
+    };
+
+    addWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
+    addWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
+    addWebSocketListener(WebSocketEvents.TOKEN_PRICE, handlePriceUpdate);
+
+    // 组件卸载时清理
+    return () => {
+      removeWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
+      removeWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
+      removeWebSocketListener(WebSocketEvents.TOKEN_PRICE, handlePriceUpdate);
+      disconnectWebSocket();
+    };
+  }, []);
+
+  // 处理交易记录更新
+  useEffect(() => {
+    transactionsRef.current = transactions;
+    
+    if (transactions.length > 0) {
+      const processed = calculateTransactionsProfits(transactions);
+      setProcessedTransactions(processed);
+    } else {
+      setProcessedTransactions([]);
+    }
+  }, [transactions]);
 
   // 获取交易历史记录
   const fetchTransactions = async (wallet: string, page: number, limit: number) => {
@@ -144,9 +201,9 @@ export default function MonitorAddresses() {
     fetchTransactions(selectedWallet, 1, newSize);
   };
 
-  // 导出交易历史CSV
+  // 导出CSV
   const exportToCSV = () => {
-    if (transactions.length === 0) {
+    if (processedTransactions.length === 0) {
       toast.error('没有可导出的数据');
       return;
     }
@@ -159,6 +216,11 @@ export default function MonitorAddresses() {
       '数量',
       'SOL数量',
       '价格',
+      '当前价格',
+      '持仓盈利',
+      '持仓盈利百分比',
+      '交易盈利',
+      '交易盈利百分比',
       '预期价格',
       '价格滑点',
       '状态',
@@ -167,13 +229,18 @@ export default function MonitorAddresses() {
     ];
 
     // Format transaction data for CSV
-    const data = transactions.map((tx) => [
+    const data = processedTransactions.map((tx) => [
       tx.timestamp,
       tx.tx_type,
       tx.token_address,
       tx.amount.toString(),
       tx.sol_amount.toString(),
       tx.price.toString(),
+      tx.current_price?.toString() || '',
+      tx.position_profit?.toString() || '',
+      tx.position_profit_percentage?.toString() || '',
+      tx.profit?.toString() || '',
+      tx.profit_percentage?.toString() || '',
       tx.expected_price.toString(),
       tx.price_slippage.toString(),
       tx.status,
@@ -564,44 +631,6 @@ export default function MonitorAddresses() {
 
   // 计算总页数
   const totalPages = Math.ceil(totalTransactions / pageSize);
-
-  // 修改计算交易盈亏的函数
-  const calculateProfit = (tx: Transaction, allTransactions: Transaction[]): { profit: number, profitPercentage: number, buyTx?: Transaction } => {
-    // 如果不是卖出交易，则没有盈亏
-    if (!tx.tx_type.toLowerCase().includes('sell')) {
-      return { profit: 0, profitPercentage: 0 };
-    }
-    
-    // 筛选该代币所有可能的买入交易
-    const buyTransactions = allTransactions.filter(t => 
-      t.token_address === tx.token_address && 
-      t.wallet_address === tx.wallet_address &&
-      t.tx_type.toLowerCase().includes('buy') &&
-      new Date(t.timestamp) < new Date(tx.timestamp)
-    );
-    
-    // 如果没有找到对应的买入交易，则无法计算盈亏
-    if (buyTransactions.length === 0) {
-      return { profit: 0, profitPercentage: 0 };
-    }
-    
-    // 找到最近的买入交易（时间上最接近当前卖出交易的）
-    const buyTx = buyTransactions.reduce((prev, curr) => {
-      const prevTime = new Date(prev.timestamp).getTime();
-      const currTime = new Date(curr.timestamp).getTime();
-      const sellTime = new Date(tx.timestamp).getTime();
-      
-      return (sellTime - currTime) < (sellTime - prevTime) ? curr : prev;
-    });
-    
-    // 计算盈亏 (卖出获得的SOL - 买入花费的SOL)
-    const profit = tx.sol_amount - buyTx.sol_amount;
-    
-    // 计算盈亏比例 ((卖出价格 - 买入价格) / 买入价格) * 100%
-    const profitPercentage = ((tx.price - buyTx.price) / buyTx.price) * 100;
-    
-    return { profit, profitPercentage, buyTx };
-  };
 
   return (
     <div className="space-y-6">
@@ -1225,12 +1254,25 @@ export default function MonitorAddresses() {
               <h2 className="text-xl font-bold">
                 钱包 <AddressDisplay address={selectedWallet} /> 的交易历史
               </h2>
-              <button
-                onClick={handleCloseTransactions}
-                className="btn btn-sm btn-circle"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                {wsConnected ? (
+                  <div className="flex items-center text-success-500">
+                    <Wifi className="mr-1 h-4 w-4" />
+                    <span className="text-sm">价格已更新</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center text-error-500">
+                    <WifiOff className="mr-1 h-4 w-4" />
+                    <span className="text-sm">价格未更新</span>
+                  </div>
+                )}
+                <button
+                  onClick={handleCloseTransactions}
+                  className="btn btn-sm btn-circle"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <div className="flex justify-between items-center mb-4">
@@ -1249,7 +1291,7 @@ export default function MonitorAddresses() {
               </div>
               <button
                 onClick={exportToCSV}
-                disabled={transactions.length === 0}
+                disabled={processedTransactions.length === 0}
                 className="btn btn-sm btn-outline"
               >
                 <Download className="mr-2 h-3 w-3" />
@@ -1261,7 +1303,7 @@ export default function MonitorAddresses() {
               <div className="flex h-60 items-center justify-center">
                 <Spinner size="lg" />
               </div>
-            ) : transactions.length === 0 ? (
+            ) : processedTransactions.length === 0 ? (
               <div className="flex h-60 flex-col items-center justify-center gap-2 text-gray-400">
                 <p className="text-lg">没有找到交易记录</p>
                 <p className="text-sm">该钱包暂无交易记录</p>
@@ -1278,12 +1320,14 @@ export default function MonitorAddresses() {
                         <th className="px-4 py-2 text-right">数量</th>
                         <th className="px-4 py-2 text-right">SOL数量</th>
                         <th className="px-4 py-2 text-right">价格</th>
-                        <th className="px-4 py-2 text-center">盈亏</th>
+                        <th className="px-4 py-2 text-right">当前价格</th>
+                        <th className="px-4 py-2 text-right">持仓盈利</th>
+                        <th className="px-4 py-2 text-right">交易盈利</th>
                         <th className="px-4 py-2 text-center">状态</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {transactions.map((tx, index) => (
+                      {processedTransactions.map((tx, index) => (
                         <tr
                           key={tx.signature + index}
                           className="border-b border-gray-700 hover:bg-gray-800/50"
@@ -1307,69 +1351,41 @@ export default function MonitorAddresses() {
                           </td>
                           <td className="px-4 py-3 text-right font-mono">
                             {tx.sol_amount.toLocaleString(undefined, { 
-                              minimumFractionDigits: 4, 
-                              maximumFractionDigits: 4 
+                              minimumFractionDigits: 6, 
+                              maximumFractionDigits: 6 
                             })}
-                            <span className="text-xs text-success-500 ml-1">
-                              ({solPrice > 0 ? `$${(tx.sol_amount * solPrice).toFixed(2)}` : '$0.00'})
-                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono">
+                            {tx.price.toExponential(6)}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono">
+                            {tx.current_price ? tx.current_price.toExponential(6) : '-'}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex flex-col">
-                              {formatDecimal(tx.price)}
-                              <span className="text-xs text-success-500">
-                                {solPrice > 0 && (
-                                  <>
-                                    $ {formatDecimal(tx.price * solPrice)}
-                                  </>
-                                )}
-                              </span>
+                            <div className={`font-medium ${(tx.position_profit_percentage || 0) >= 0 ? 'text-success-500' : 'text-error-500'}`}>
+                              {formatProfitPercentage(tx.position_profit_percentage)}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              {formatProfit(tx.position_profit)}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-4 py-3 text-right">
                             {tx.tx_type.toLowerCase().includes('sell') && (
-                              (() => {
-                                const { profit, profitPercentage, buyTx } = calculateProfit(tx, transactions);
-                                const isProfitable = profit > 0;
-                                
-                                // 如果没有找到对应的买入交易
-                                if (!buyTx) {
-                                  return (
-                                    <div className="flex flex-col items-center text-gray-400 text-xs">
-                                      <span>未找到对应</span>
-                                      <span>买入记录</span>
-                                    </div>
-                                  );
-                                }
-                                
-                                // 计算美元价值
-                                const profitUsd = profit * solPrice;
-                                
-                                return (
-                                  <div className="flex flex-col items-center">
-                                    <span className={`font-medium ${isProfitable ? 'text-success-500' : 'text-error-500'}`}>
-                                      {isProfitable ? '+' : ''}{profit.toFixed(6)} SOL
-                                    </span>
-                                    <span className={`text-xs ${isProfitable ? 'text-success-500' : 'text-error-500'}`}>
-                                      {isProfitable ? '+' : ''}
-                                      {solPrice > 0 && (
-                                        <>
-                                          $ {formatDecimal(profitUsd)}
-                                        </>
-                                      )}
-                                    </span>
-                                    <span className={`text-xs ${isProfitable ? 'text-success-500' : 'text-error-500'}`}>
-                                      {isProfitable ? '+' : ''}{profitPercentage.toFixed(2)}%
-                                    </span>
-                                  </div>
-                                );
-                              })()
+                              <>
+                                <div className={`font-medium ${(tx.profit_percentage || 0) >= 0 ? 'text-success-500' : 'text-error-500'}`}>
+                                  {formatProfitPercentage(tx.profit_percentage)}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  {formatProfit(tx.profit)}
+                                </div>
+                              </>
                             )}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <StatusBadge 
-                              status={tx.status === 'confirmed' ? 'success' : 'error'} 
-                              text={tx.status === 'confirmed' ? '成功' : '失败'} 
+                            <StatusBadge
+                              status={tx.status === 'confirmed' ? 'success' : tx.status === 'pending' ? 'warning' : 'error'}
+                              text={tx.status === 'confirmed' ? '已确认' : tx.status === 'pending' ? '处理中' : '失败'}
+                              size="sm"
                             />
                           </td>
                         </tr>
@@ -1379,14 +1395,7 @@ export default function MonitorAddresses() {
                 </div>
 
                 {totalPages > 1 && (
-                  <div className="flex justify-center mt-4 space-x-1">
-                    <button
-                      onClick={() => handlePageChange(1)}
-                      disabled={currentPage === 1}
-                      className="btn btn-sm btn-outline"
-                    >
-                      首页
-                    </button>
+                  <div className="flex items-center justify-center gap-2 pt-4">
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
@@ -1394,8 +1403,8 @@ export default function MonitorAddresses() {
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <span className="flex items-center px-3 py-1">
-                      {currentPage} / {totalPages}
+                    <span className="text-sm">
+                      第 {currentPage} 页，共 {totalPages} 页
                     </span>
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
@@ -1403,13 +1412,6 @@ export default function MonitorAddresses() {
                       className="btn btn-sm btn-outline"
                     >
                       <ChevronRight className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handlePageChange(totalPages)}
-                      disabled={currentPage === totalPages}
-                      className="btn btn-sm btn-outline"
-                    >
-                      末页
                     </button>
                   </div>
                 )}

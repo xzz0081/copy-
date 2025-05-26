@@ -60,6 +60,11 @@ export interface Transaction {
   token_address: string;
   tx_type: string;
   wallet_address: string;
+  current_price?: number;
+  position_profit?: number;
+  position_profit_percentage?: number;
+  profit?: number;
+  profit_percentage?: number;
 }
 
 export interface TransactionsResponse {

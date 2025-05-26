@@ -1,21 +1,81 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Download, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'lucide-react';
 import { getTransactions } from '../services/api';
 import { TransactionsResponse, Transaction } from '../types';
+import { connectWebSocket, disconnectWebSocket, addWebSocketListener, removeWebSocketListener, WebSocketEvents } from '../services/websocket';
+import { calculateTransactionsProfits, formatProfit, formatProfitPercentage } from '../utils/profit';
 import Spinner from '../components/ui/Spinner';
 import AddressDisplay from '../components/ui/AddressDisplay';
 import StatusBadge from '../components/ui/StatusBadge';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
+// WebSocket服务地址
+const WS_URL = 'ws://d19e-2408-8266-5903-f0a-69cf-16a0-ec95-7ff0.ngrok-free.app';
+
 export default function TransactionHistory() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [processedTransactions, setProcessedTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalTransactions, setTotalTransactions] = useState(0);
   const [inputWalletAddress, setInputWalletAddress] = useState('');
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsConnectedRef = useRef(wsConnected);
+  const transactionsRef = useRef(transactions);
+
+  // 初始化WebSocket连接
+  useEffect(() => {
+    // 连接WebSocket
+    connectWebSocket(WS_URL);
+
+    // 监听WebSocket事件
+    const handleConnected = () => {
+      setWsConnected(true);
+      wsConnectedRef.current = true;
+      toast.success('价格更新服务已连接');
+    };
+
+    const handleDisconnected = () => {
+      setWsConnected(false);
+      wsConnectedRef.current = false;
+      toast.error('价格更新服务已断开');
+    };
+
+    const handlePriceUpdate = () => {
+      // 价格更新时重新计算盈利
+      if (transactionsRef.current.length > 0) {
+        const processed = calculateTransactionsProfits(transactionsRef.current);
+        setProcessedTransactions(processed);
+      }
+    };
+
+    addWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
+    addWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
+    addWebSocketListener(WebSocketEvents.TOKEN_PRICE, handlePriceUpdate);
+
+    // 组件卸载时清理
+    return () => {
+      removeWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
+      removeWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
+      removeWebSocketListener(WebSocketEvents.TOKEN_PRICE, handlePriceUpdate);
+      disconnectWebSocket();
+    };
+  }, []);
+
+  // 处理交易记录更新
+  useEffect(() => {
+    transactionsRef.current = transactions;
+    
+    if (transactions.length > 0) {
+      const processed = calculateTransactionsProfits(transactions);
+      setProcessedTransactions(processed);
+    } else {
+      setProcessedTransactions([]);
+    }
+  }, [transactions]);
 
   const fetchTransactions = async (wallet: string, page: number, limit: number) => {
     if (!wallet) return;
@@ -62,7 +122,7 @@ export default function TransactionHistory() {
   };
 
   const exportToCSV = () => {
-    if (transactions.length === 0) {
+    if (processedTransactions.length === 0) {
       toast.error('没有可导出的数据');
       return;
     }
@@ -75,6 +135,11 @@ export default function TransactionHistory() {
       '数量',
       'SOL数量',
       '价格',
+      '当前价格',
+      '持仓盈利',
+      '持仓盈利百分比',
+      '交易盈利',
+      '交易盈利百分比',
       '预期价格',
       '价格滑点',
       '状态',
@@ -83,13 +148,18 @@ export default function TransactionHistory() {
     ];
 
     // Format transaction data for CSV
-    const data = transactions.map((tx) => [
+    const data = processedTransactions.map((tx) => [
       tx.timestamp,
       tx.tx_type,
       tx.token_address,
       tx.amount.toString(),
       tx.sol_amount.toString(),
       tx.price.toString(),
+      tx.current_price?.toString() || '',
+      tx.position_profit?.toString() || '',
+      tx.position_profit_percentage?.toString() || '',
+      tx.profit?.toString() || '',
+      tx.profit_percentage?.toString() || '',
       tx.expected_price.toString(),
       tx.price_slippage.toString(),
       tx.status,
@@ -138,7 +208,23 @@ export default function TransactionHistory() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">交易历史</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">交易历史</h1>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-400">价格更新:</span>
+          {wsConnected ? (
+            <div className="flex items-center text-success-500">
+              <Wifi className="mr-1 h-4 w-4" />
+              <span className="text-sm">已连接</span>
+            </div>
+          ) : (
+            <div className="flex items-center text-error-500">
+              <WifiOff className="mr-1 h-4 w-4" />
+              <span className="text-sm">未连接</span>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="card space-y-4">
         <div className="flex flex-col gap-4 md:flex-row md:items-end">
@@ -165,7 +251,7 @@ export default function TransactionHistory() {
             </button>
             <button
               onClick={exportToCSV}
-              disabled={transactions.length === 0}
+              disabled={processedTransactions.length === 0}
               className="btn btn-outline"
             >
               <Download className="mr-2 h-4 w-4" />
@@ -174,33 +260,31 @@ export default function TransactionHistory() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400">每页显示:</span>
-            <select
-              value={pageSize}
-              onChange={handlePageSizeChange}
-              className="rounded-md border border-gray-700 bg-background-dark px-2 py-1 text-sm"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-          </div>
-          
-          {walletAddress && (
-            <div className="text-sm text-gray-400">
-              显示地址 <AddressDisplay address={walletAddress} maxLength={10} /> 的交易
-            </div>
-          )}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-400">每页显示:</span>
+          <select
+            value={pageSize}
+            onChange={handlePageSizeChange}
+            className="rounded-md border border-gray-700 bg-background-dark px-2 py-1 text-sm"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
         </div>
+        
+        {walletAddress && (
+          <div className="text-sm text-gray-400">
+            显示地址 <AddressDisplay address={walletAddress} maxLength={10} /> 的交易
+          </div>
+        )}
 
         {loading ? (
           <div className="flex h-60 items-center justify-center">
             <Spinner size="lg" />
           </div>
-        ) : transactions.length === 0 ? (
+        ) : processedTransactions.length === 0 ? (
           <div className="flex h-60 flex-col items-center justify-center gap-2 text-gray-400">
             {walletAddress ? (
               <>
@@ -223,11 +307,14 @@ export default function TransactionHistory() {
                     <th className="px-4 py-2 text-right">数量</th>
                     <th className="px-4 py-2 text-right">SOL数量</th>
                     <th className="px-4 py-2 text-right">价格</th>
+                    <th className="px-4 py-2 text-right">当前价格</th>
+                    <th className="px-4 py-2 text-right">持仓盈利</th>
+                    <th className="px-4 py-2 text-right">交易盈利</th>
                     <th className="px-4 py-2 text-center">状态</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {transactions.map((tx, index) => (
+                  {processedTransactions.map((tx, index) => (
                     <tr
                       key={tx.signature + index}
                       className="border-b border-gray-700 hover:bg-gray-800/50"
@@ -257,6 +344,29 @@ export default function TransactionHistory() {
                       </td>
                       <td className="px-4 py-3 text-right font-mono">
                         {tx.price.toExponential(6)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono">
+                        {tx.current_price ? tx.current_price.toExponential(6) : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className={`font-medium ${(tx.position_profit_percentage || 0) >= 0 ? 'text-success-500' : 'text-error-500'}`}>
+                          {formatProfitPercentage(tx.position_profit_percentage)}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {formatProfit(tx.position_profit)}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {tx.tx_type.toLowerCase().includes('sell') && (
+                          <>
+                            <div className={`font-medium ${(tx.profit_percentage || 0) >= 0 ? 'text-success-500' : 'text-error-500'}`}>
+                              {formatProfitPercentage(tx.profit_percentage)}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              {formatProfit(tx.profit)}
+                            </div>
+                          </>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <StatusBadge
