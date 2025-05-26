@@ -567,12 +567,54 @@ export const getWebSocketStats = (): WebSocketStats => {
  * @returns 代币价格，如果没有则返回0
  */
 export const getTokenPrice = (tokenAddress: string): number => {
-  const price = tokenPriceCache[tokenAddress] || 0;
-  // 仅在调试时启用，避免过度日志
-  // if (tokenAddress && tokenAddress.length > 8 && price > 0) {
-  //   console.log(`获取代币 ${tokenAddress.substring(0, 8)}... 的缓存价格: ${price}`);
-  // }
-  return price;
+  if (!tokenAddress) return 0;
+  
+  // 统一转为小写
+  const normalizedAddress = tokenAddress.toLowerCase();
+  
+  // 直接匹配
+  if (tokenPriceCache[normalizedAddress]) {
+    console.log(`直接匹配到代币价格: ${normalizedAddress} = ${tokenPriceCache[normalizedAddress]}`);
+    return tokenPriceCache[normalizedAddress];
+  }
+  
+  // 尝试添加pump后缀匹配
+  const addressWithPump = normalizedAddress + 'pump';
+  if (tokenPriceCache[addressWithPump]) {
+    console.log(`添加pump后缀匹配到价格: ${addressWithPump} = ${tokenPriceCache[addressWithPump]}`);
+    return tokenPriceCache[addressWithPump];
+  }
+  
+  // 尝试去除pump后缀匹配
+  if (normalizedAddress.endsWith('pump')) {
+    const addressWithoutPump = normalizedAddress.slice(0, -4);
+    if (tokenPriceCache[addressWithoutPump]) {
+      console.log(`去除pump后缀匹配到价格: ${addressWithoutPump} = ${tokenPriceCache[addressWithoutPump]}`);
+      return tokenPriceCache[addressWithoutPump];
+    }
+  }
+  
+  // 尝试部分匹配（匹配前8-12个字符）
+  for (const cachedAddress in tokenPriceCache) {
+    // 前8个字符匹配
+    if (normalizedAddress.length >= 8 && 
+        cachedAddress.length >= 8 &&
+        normalizedAddress.substring(0, 8) === cachedAddress.substring(0, 8)) {
+      console.log(`部分匹配(8位)到价格: ${normalizedAddress} => ${cachedAddress} = ${tokenPriceCache[cachedAddress]}`);
+      return tokenPriceCache[cachedAddress];
+    }
+    
+    // 如果有更长的地址，尝试匹配更多字符
+    if (normalizedAddress.length >= 12 && 
+        cachedAddress.length >= 12 &&
+        normalizedAddress.substring(0, 12) === cachedAddress.substring(0, 12)) {
+      console.log(`部分匹配(12位)到价格: ${normalizedAddress} => ${cachedAddress} = ${tokenPriceCache[cachedAddress]}`);
+      return tokenPriceCache[cachedAddress];
+    }
+  }
+  
+  console.log(`未找到代币 ${normalizedAddress} 的价格，返回0`);
+  return 0;
 };
 
 /**
