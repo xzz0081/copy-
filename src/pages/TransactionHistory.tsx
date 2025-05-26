@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Download, ChevronLeft, ChevronRight, Wifi, WifiOff } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Search, Download, ChevronLeft, ChevronRight, Wifi, WifiOff, RefreshCcw } from 'lucide-react';
 import { getTransactions, getSolPrice, PriceSource } from '../services/api';
 import { TransactionsResponse, Transaction } from '../types';
-import { addWebSocketListener, removeWebSocketListener, WebSocketEvents, getTokenPrice } from '../services/websocket';
+import { addWebSocketListener, removeWebSocketListener, WebSocketEvents, getTokenPrice, getAllTokenPrices } from '../services/websocket';
 import { calculateTransactionsProfits, formatProfit, formatProfitPercentage, formatNumber, calculateUsdValue, calculateTokenPriceUsd } from '../utils/profit';
 import Spinner from '../components/ui/Spinner';
 import AddressDisplay from '../components/ui/AddressDisplay';
@@ -27,6 +27,8 @@ export default function TransactionHistory() {
   const transactionsRef = useRef(transactions);
   const [solPrice, setSolPrice] = useState<number>(0);
   const [loadingPrice, setLoadingPrice] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(Date.now());
+  const updateTimeoutRef = useRef<number | null>(null);
 
   // 监听WebSocket事件
   const handleConnected = () => {
@@ -41,59 +43,25 @@ export default function TransactionHistory() {
     toast.error('价格更新服务已断开');
   };
 
-  // 处理代币价格更新
-  const handleTokenPriceMessage = (data: any) => {
-    // 处理不同格式的价格消息
-    // 1. {type: 'token_price', token: '...', price: ...} 格式
-    // 2. {price: ..., token: '...'} 格式 (直接从WebSocket收到)
-    if ((data.type === 'token_price' && data.token && data.price !== undefined) || 
-        (!data.type && data.token && data.price !== undefined)) {
-      
-      const tokenAddress = data.token.toLowerCase();
-      const price = parseFloat(data.price);
-      
-      // 打印接收到的代币信息
-      console.log(`接收到代币价格更新: ${tokenAddress} = ${price}`);
-      
-      // websocket服务会自动更新缓存，这里不需要手动更新
-      // tokenPriceCache[tokenAddress] = price;
-      
-      // 如果当前有交易记录，尝试匹配并更新
-      if (transactionsRef.current.length > 0) {
-        // 检查是否有匹配的代币地址
-        const hasMatchingToken = transactionsRef.current.some(tx => {
-          const txTokenAddress = tx.token_address.toLowerCase();
-          
-          // 精确匹配
-          if (txTokenAddress === tokenAddress) {
-            return true;
-          }
-          
-          // pump后缀匹配
-          if (txTokenAddress.endsWith('pump') && tokenAddress === txTokenAddress.slice(0, -4)) {
-            return true;
-          }
-          
-          if (!txTokenAddress.endsWith('pump') && tokenAddress === txTokenAddress + 'pump') {
-            return true;
-          }
-          
-          // 部分匹配（前8个字符）
-          if (txTokenAddress.startsWith(tokenAddress.substring(0, 8)) ||
-              tokenAddress.startsWith(txTokenAddress.substring(0, 8))) {
-            return true;
-          }
-          
-          return false;
-        });
-        
-        if (hasMatchingToken) {
-          console.log(`找到匹配的代币: ${tokenAddress}，更新UI...`);
-          updateTransactionsWithPrices();
-        }
-      }
+  // 批量处理代币价格更新
+  const handleTokenPriceMessage = useCallback((data: any) => {
+    // 使用节流技术，防止频繁更新
+    if (updateTimeoutRef.current) {
+      return; // 已经有待处理的更新，忽略此次更新
     }
-  };
+    
+    // 设置更新超时，最多500ms更新一次
+    updateTimeoutRef.current = window.setTimeout(() => {
+      // 只有当前有交易记录时才更新
+      if (transactionsRef.current.length > 0) {
+        updateTransactionsWithPrices();
+      }
+      
+      // 更新时间戳并清除超时引用
+      setLastUpdateTime(Date.now());
+      updateTimeoutRef.current = null;
+    }, 500);
+  }, []);
 
   // 获取SOL价格
   const fetchSolPrice = async () => {
@@ -113,7 +81,7 @@ export default function TransactionHistory() {
     }
   };
 
-  // 获取SOL价格
+  // 获取SOL价格和监听WebSocket事件
   useEffect(() => {
     // 监听WebSocket事件
     addWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
@@ -122,61 +90,71 @@ export default function TransactionHistory() {
 
     fetchSolPrice();
     
-    // 组件卸载时只移除监听器，不断开连接
+    // 组件卸载时清理
     return () => {
       removeWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
       removeWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
       removeWebSocketListener(WebSocketEvents.MESSAGE, handleTokenPriceMessage);
+      
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+        updateTimeoutRef.current = null;
+      }
     };
-  }, []);
+  }, [handleTokenPriceMessage]);
 
-  // 更新交易记录的价格
-  const updateTransactionsWithPrices = () => {
+  // 更新交易记录的价格 - 性能优化版
+  const updateTransactionsWithPrices = useCallback(() => {
     if (transactionsRef.current.length === 0) return;
     
-    console.log('正在更新交易记录价格...');
+    // 获取所有当前的代币价格（使用Map优化查找）
+    const allTokenPrices = getAllTokenPrices();
     
     // 为每条交易记录设置当前价格
     const updatedTransactions = transactionsRef.current.map(tx => {
-      const tokenAddress = tx.token_address;
-      // 使用导入的WebSocket实时价格
-      const websocketPrice = getTokenPrice(tokenAddress);
+      const tokenAddress = tx.token_address.toLowerCase();
       
-      // 强制使用WebSocket价格，即使为0也使用真实值
-      console.log(`交易 ${tx.signature.substring(0, 8)}... 代币 ${tokenAddress.substring(0, 8)}...`);
-      console.log(`历史价格: ${tx.price}, WebSocket价格: ${websocketPrice}`);
+      // 直接从Map中查找价格
+      let websocketPrice = allTokenPrices.get(tokenAddress);
       
-      // 不做任何兜底或格式转换，直接使用WebSocket价格
-      return { ...tx, current_price: websocketPrice };
-    });
-    
-    // 查看价格是否真正更新
-    console.log('更新后的交易记录:');
-    updatedTransactions.forEach((tx, index) => {
-      console.log(`#${index} 代币: ${tx.token_address.substring(0, 8)}... 历史价格: ${tx.price}, 当前价格(WebSocket): ${tx.current_price}`);
+      // 如果没找到，尝试进行后缀匹配
+      if (websocketPrice === undefined) {
+        // 尝试添加pump后缀
+        const addressWithPump = tokenAddress + 'pump';
+        websocketPrice = allTokenPrices.get(addressWithPump);
+        
+        // 尝试移除pump后缀
+        if (websocketPrice === undefined && tokenAddress.endsWith('pump')) {
+          const addressWithoutPump = tokenAddress.slice(0, -4);
+          websocketPrice = allTokenPrices.get(addressWithoutPump);
+        }
+        
+        // 如果仍未找到，使用getTokenPrice进行完整匹配
+        if (websocketPrice === undefined) {
+          websocketPrice = getTokenPrice(tokenAddress);
+        }
+      }
+      
+      // 返回更新后的交易记录
+      return { ...tx, current_price: websocketPrice ?? null };
     });
     
     // 计算盈利情况
     const processed = calculateTransactionsProfits(updatedTransactions, solPrice);
-    console.log('处理后的交易记录数: ' + processed.length);
     setProcessedTransactions(processed);
-  };
+  }, [solPrice]);
 
   // 处理交易记录更新
   useEffect(() => {
     transactionsRef.current = transactions;
     
     if (transactions.length > 0) {
-      // 打印交易记录中的代币地址
-      const tokenAddresses = [...new Set(transactions.map(tx => tx.token_address))];
-      console.log(`交易记录中的代币地址: ${tokenAddresses.join(', ')}`);
-      
       // 更新处理后的交易记录
       updateTransactionsWithPrices();
     } else {
       setProcessedTransactions([]);
     }
-  }, [transactions, solPrice]);
+  }, [transactions, solPrice, updateTransactionsWithPrices]);
 
   // 手动刷新价格
   const refreshPrices = () => {
@@ -398,171 +376,156 @@ export default function TransactionHistory() {
   const totalPages = Math.ceil(totalTransactions / pageSize);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">交易历史</h1>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center">
-            <span className="text-sm text-gray-400 mr-2">SOL价格:</span>
-            <span className="font-medium">${solPrice.toFixed(2)} USD</span>
-          </div>
-          <button 
-            onClick={refreshPrices}
-            className="btn btn-sm btn-outline"
-          >
-            刷新价格
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400">价格更新:</span>
-            {wsConnected ? (
-              <div className="flex items-center text-success-500">
-                <Wifi className="mr-1 h-4 w-4" />
-                <span className="text-sm">已连接</span>
-              </div>
-            ) : (
-              <div className="flex items-center text-error-500">
-                <WifiOff className="mr-1 h-4 w-4" />
-                <span className="text-sm">未连接</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {!wsConnected && (
-        <div className="bg-error-500/10 border border-error-500 text-error-500 rounded-md p-3 mb-4 flex items-center">
-          <WifiOff className="h-5 w-5 mr-2" />
-          <div>
-            <p className="font-medium">价格更新服务未连接</p>
-            <p className="text-sm">持仓盈利计算将使用交易价格代替当前市场价格</p>
-          </div>
-        </div>
-      )}
-
-      <div className="card space-y-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end">
-          <div className="flex-1 space-y-2">
-            <label htmlFor="walletAddress" className="block text-sm font-medium">
-              钱包地址
-            </label>
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                id="walletAddress"
-                placeholder="输入钱包地址"
-                className="input pl-10"
-                value={inputWalletAddress}
-                onChange={(e) => setInputWalletAddress(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={handleSearch} className="btn btn-primary">
-              查询
-            </button>
-            <button
-              onClick={exportToCSV}
-              disabled={processedTransactions.length === 0}
-              className="btn btn-outline"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              导出 CSV
-            </button>
-          </div>
-        </div>
-
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-400">每页显示:</span>
-          <select
-            value={pageSize}
-            onChange={handlePageSizeChange}
-            className="rounded-md border border-gray-700 bg-background-dark px-2 py-1 text-sm"
-          >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
-        </div>
-        
-        {walletAddress && (
-          <div className="text-sm text-gray-400">
-            显示地址 <AddressDisplay address={walletAddress} maxLength={10} /> 的交易
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex h-60 items-center justify-center">
-            <Spinner size="lg" />
-          </div>
-        ) : processedTransactions.length === 0 ? (
-          <div className="flex h-60 flex-col items-center justify-center gap-2 text-gray-400">
-            {walletAddress ? (
+          <span className={`text-sm ${wsConnected ? 'text-success-500' : 'text-error-500'}`}>
+            {wsConnected ? (
               <>
-                <p className="text-lg">没有找到交易记录</p>
-                <p className="text-sm">请检查钱包地址是否正确或尝试其他地址</p>
+                <Wifi className="inline-block w-4 h-4 mr-1" />
+                价格更新已连接
               </>
             ) : (
-              <p className="text-lg">请输入钱包地址并查询</p>
+              <>
+                <WifiOff className="inline-block w-4 h-4 mr-1" />
+                价格更新已断开
+              </>
             )}
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="px-4 py-2 text-left">时间</th>
-                    <th className="px-4 py-2 text-left">类型</th>
-                    <th className="px-4 py-2 text-left">Token地址</th>
-                    <th className="px-4 py-2 text-right">数量</th>
-                    <th className="px-4 py-2 text-right">SOL数量</th>
-                    <th className="px-4 py-2 text-right">价格</th>
-                    <th className="px-4 py-2 text-right">当前价格</th>
-                    <th className="px-4 py-2 text-right">持仓盈利</th>
-                    <th className="px-4 py-2 text-right">交易盈利</th>
-                    <th className="px-4 py-2 text-center">状态</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {processedTransactions.map((tx, index) => (
-                    <TransactionRow 
-                      key={tx.signature + index}
-                      tx={tx}
-                      solPrice={solPrice}
-                      index={index}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          </span>
+          <button 
+            className="flex items-center gap-1 px-2 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded" 
+            onClick={refreshPrices}
+            disabled={loadingPrice}
+          >
+            <RefreshCcw className="w-3 h-3" />
+            {loadingPrice ? '刷新中...' : '刷新价格'}
+          </button>
+        </div>
+      </div>
+      
+      {/* SOL价格显示 */}
+      <div className="mb-4 text-sm text-gray-300">
+        SOL价格: ${solPrice.toFixed(2)} USD
+        <span className="text-xs text-gray-400 ml-2">
+          最后更新: {new Date(lastUpdateTime).toLocaleTimeString()}
+        </span>
+      </div>
 
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-4">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="btn btn-sm btn-outline"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <span className="text-sm">
-                  第 {currentPage} 页，共 {totalPages} 页
-                </span>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="btn btn-sm btn-outline"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            )}
-          </>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+          <div className="relative">
+            <input
+              type="text"
+              className="bg-gray-800 border border-gray-700 rounded p-2 pl-8 w-full sm:w-96"
+              placeholder="输入钱包地址"
+              value={inputWalletAddress}
+              onChange={(e) => setInputWalletAddress(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <Search className="absolute left-2 top-2.5 w-4 h-4 text-gray-400" />
+          </div>
+          <button
+            className="bg-primary-500 hover:bg-primary-600 text-white rounded px-4 py-2"
+            onClick={handleSearch}
+          >
+            查询
+          </button>
+        </div>
+
+        {transactions.length > 0 && (
+          <button
+            className="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 text-white rounded px-4 py-2"
+            onClick={exportToCSV}
+          >
+            <Download className="w-4 h-4" />
+            导出CSV
+          </button>
         )}
       </div>
+
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <Spinner size="lg" />
+        </div>
+      ) : transactions.length > 0 ? (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full bg-gray-900 rounded overflow-hidden">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="px-4 py-3 text-left">时间</th>
+                  <th className="px-4 py-3 text-left">类型</th>
+                  <th className="px-4 py-3 text-left">代币地址</th>
+                  <th className="px-4 py-3 text-right">数量</th>
+                  <th className="px-4 py-3 text-right">SOL金额</th>
+                  <th className="px-4 py-3 text-right">历史价格</th>
+                  <th className="px-4 py-3 text-right">当前价格</th>
+                  <th className="px-4 py-3 text-right">当前盈亏</th>
+                  <th className="px-4 py-3 text-right">实现盈亏</th>
+                  <th className="px-4 py-3 text-center">状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                {processedTransactions.map((tx, index) => (
+                  <TransactionRow 
+                    key={tx.signature} 
+                    tx={tx} 
+                    solPrice={solPrice} 
+                    index={index}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="flex justify-between items-center mt-4">
+            <div className="text-sm text-gray-400">
+              显示 {processedTransactions.length} 条交易，共 {totalTransactions} 条
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                className="bg-gray-800 border border-gray-700 rounded p-2"
+                value={pageSize}
+                onChange={handlePageSizeChange}
+              >
+                <option value="10">10条/页</option>
+                <option value="20">20条/页</option>
+                <option value="50">50条/页</option>
+                <option value="100">100条/页</option>
+              </select>
+              
+              <div className="flex">
+                <button
+                  className="bg-gray-800 hover:bg-gray-700 text-white rounded-l px-3 py-2 disabled:opacity-50"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="bg-gray-900 text-white px-4 py-2 border-x border-gray-700">
+                  {currentPage}
+                </span>
+                <button
+                  className="bg-gray-800 hover:bg-gray-700 text-white rounded-r px-3 py-2 disabled:opacity-50"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage * pageSize >= totalTransactions}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : walletAddress ? (
+        <div className="bg-gray-800 rounded p-8 text-center">
+          <p className="text-lg text-gray-300">没有找到交易记录</p>
+        </div>
+      ) : (
+        <div className="bg-gray-800 rounded p-8 text-center">
+          <p className="text-lg text-gray-300">请输入钱包地址查询交易记录</p>
+        </div>
+      )}
     </div>
   );
 }

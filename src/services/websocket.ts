@@ -53,8 +53,11 @@ export interface WebSocketStats {
   isConnected: boolean;        // 当前是否连接
 }
 
-// 代币价格缓存，用于存储最新价格
-const tokenPriceCache: Record<string, number> = {};
+// 代币价格缓存，使用Map提高查找效率
+const tokenPriceCache = new Map<string, number>();
+
+// 地址前缀索引，用于快速查找匹配的地址
+const tokenPrefixIndex = new Map<string, string[]>();
 
 // 创建事件发射器
 const priceEventEmitter = new EventEmitter();
@@ -131,7 +134,7 @@ const handleVisibilityChange = () => {
   if (document.visibilityState === 'visible') {
     // 页面变为可见时，检查连接
     if (!isConnected && !isConnecting) {
-      console.log('页面可见，检查WebSocket连接...');
+      // 减少日志输出
       connectWebSocket(savedWsUrl);
     }
   }
@@ -147,14 +150,14 @@ const sendHeartbeat = () => {
   if (wsInstance && isConnected) {
     try {
       wsInstance.send(HEARTBEAT_MSG);
-      console.log('心跳包已发送');
+      // 减少日志，不再打印每次心跳
       
       // 更新心跳统计
       updateStats({ 
         heartbeatsSent: wsStats.heartbeatsSent + 1 
       });
     } catch (error) {
-      console.error('发送心跳包失败:', error);
+      console.error('发送心跳包失败');
       // 如果发送失败，可能连接已中断，尝试重连
       handleConnectionFailure();
     }
@@ -192,7 +195,7 @@ const startConnectionCheck = () => {
   // 每60秒检查一次连接状态
   connectionCheckTimer = window.setInterval(() => {
     if (!isConnected && !isConnecting && savedWsUrl) {
-      console.log('连接检查: WebSocket未连接，尝试重连...');
+      // 减少日志输出
       connectWebSocket(savedWsUrl);
     }
   }, 60000);
@@ -262,7 +265,8 @@ const scheduleReconnect = () => {
   if (reconnectAttempts < 10) { // 最多尝试10次
     // 使用指数退避策略，但设置上限
     const delay = Math.min(1000 * Math.pow(1.5, reconnectAttempts), 30000);
-    console.log(`${delay / 1000}秒后尝试重新连接... (尝试 ${reconnectAttempts + 1}/10)`);
+    // 减少日志，简化输出
+    console.log(`${delay / 1000}秒后尝试重连 (${reconnectAttempts + 1}/10)`);
     
     reconnectTimer = window.setTimeout(() => {
       reconnectAttempts++;
@@ -289,6 +293,34 @@ const scheduleReconnect = () => {
 };
 
 /**
+ * 更新代币价格缓存和索引
+ * @param tokenAddress 代币地址
+ * @param price 价格
+ */
+const updateTokenPriceCache = (tokenAddress: string, price: number) => {
+  const normalizedAddress = tokenAddress.toLowerCase();
+  
+  // 更新价格缓存
+  tokenPriceCache.set(normalizedAddress, price);
+  
+  // 更新索引
+  for (let prefixLength = 8; prefixLength <= 12; prefixLength += 4) {
+    if (normalizedAddress.length >= prefixLength) {
+      const prefix = normalizedAddress.substring(0, prefixLength);
+      
+      if (!tokenPrefixIndex.has(prefix)) {
+        tokenPrefixIndex.set(prefix, []);
+      }
+      
+      const addresses = tokenPrefixIndex.get(prefix);
+      if (addresses && !addresses.includes(normalizedAddress)) {
+        addresses.push(normalizedAddress);
+      }
+    }
+  }
+};
+
+/**
  * 连接到WebSocket服务
  * @param url WebSocket服务URL
  */
@@ -296,7 +328,6 @@ export const connectWebSocket = (url: string): void => {
   // 保存URL以便于重连
   if (url) {
     savedWsUrl = url;
-    console.log(`保存WebSocket URL: ${url}`);
   } else if (!savedWsUrl) {
     console.error('未提供WebSocket URL');
     return;
@@ -388,12 +419,8 @@ export const connectWebSocket = (url: string): void => {
         
         // 处理心跳响应
         if (data.type === 'pong') {
-          console.log('收到心跳响应');
           return;
         }
-        
-        // 直接打印所有收到的消息，不做复杂处理
-        console.log('WebSocket消息接收:', data);
         
         // 处理价格更新消息，兼容多种格式
         // 格式1: {type: 'price_update', token: '...', price: ...}
@@ -404,11 +431,8 @@ export const connectWebSocket = (url: string): void => {
           const tokenAddress = data.token.toLowerCase();
           const price = parseFloat(data.price);
           
-          // 打印价格更新信息
-          console.log(`代币价格更新: ${tokenAddress} = ${price}`);
-          
-          // 更新缓存
-          tokenPriceCache[tokenAddress] = price;
+          // 更新价格缓存和索引
+          updateTokenPriceCache(tokenAddress, price);
           
           // 始终发送MESSAGE事件，包含完整数据
           priceEventEmitter.emit(WebSocketEvents.MESSAGE, data);
@@ -423,7 +447,7 @@ export const connectWebSocket = (url: string): void => {
           priceEventEmitter.emit(WebSocketEvents.MESSAGE, data);
         }
       } catch (error) {
-        console.error('解析WebSocket消息失败:', error);
+        console.error('解析WebSocket消息失败');
         priceEventEmitter.emit(WebSocketEvents.ERROR, '解析消息失败');
       }
     };
@@ -433,7 +457,7 @@ export const connectWebSocket = (url: string): void => {
       // 清除连接超时
       window.clearTimeout(connectionTimeout);
       
-      console.log(`WebSocket连接已关闭: Code=${event.code}, Reason=${event.reason}`);
+      console.log(`WebSocket连接已关闭: Code=${event.code}`);
       isConnected = false;
       isConnecting = false;
       
@@ -463,7 +487,7 @@ export const connectWebSocket = (url: string): void => {
 
     // 连接错误
     wsInstance.onerror = (error) => {
-      console.error('WebSocket连接错误:', error);
+      console.error('WebSocket连接错误');
       
       // 更新统计信息 - 连接错误
       updateStats({
@@ -475,7 +499,7 @@ export const connectWebSocket = (url: string): void => {
       // 让onclose处理重连
     };
   } catch (error) {
-    console.error('创建WebSocket连接失败:', error);
+    console.error('创建WebSocket连接失败');
     
     // 更新统计信息 - 连接错误
     updateStats({
@@ -572,48 +596,45 @@ export const getTokenPrice = (tokenAddress: string): number => {
   // 统一转为小写
   const normalizedAddress = tokenAddress.toLowerCase();
   
-  // 直接匹配
-  if (tokenPriceCache[normalizedAddress]) {
-    console.log(`直接匹配到代币价格: ${normalizedAddress} = ${tokenPriceCache[normalizedAddress]}`);
-    return tokenPriceCache[normalizedAddress];
+  // 直接匹配 - 使用Map优化性能
+  const price = tokenPriceCache.get(normalizedAddress);
+  if (price !== undefined) {
+    return price;
   }
   
   // 尝试添加pump后缀匹配
   const addressWithPump = normalizedAddress + 'pump';
-  if (tokenPriceCache[addressWithPump]) {
-    console.log(`添加pump后缀匹配到价格: ${addressWithPump} = ${tokenPriceCache[addressWithPump]}`);
-    return tokenPriceCache[addressWithPump];
+  const priceWithPump = tokenPriceCache.get(addressWithPump);
+  if (priceWithPump !== undefined) {
+    return priceWithPump;
   }
   
   // 尝试去除pump后缀匹配
   if (normalizedAddress.endsWith('pump')) {
     const addressWithoutPump = normalizedAddress.slice(0, -4);
-    if (tokenPriceCache[addressWithoutPump]) {
-      console.log(`去除pump后缀匹配到价格: ${addressWithoutPump} = ${tokenPriceCache[addressWithoutPump]}`);
-      return tokenPriceCache[addressWithoutPump];
+    const priceWithoutPump = tokenPriceCache.get(addressWithoutPump);
+    if (priceWithoutPump !== undefined) {
+      return priceWithoutPump;
     }
   }
   
-  // 尝试部分匹配（匹配前8-12个字符）
-  for (const cachedAddress in tokenPriceCache) {
-    // 前8个字符匹配
-    if (normalizedAddress.length >= 8 && 
-        cachedAddress.length >= 8 &&
-        normalizedAddress.substring(0, 8) === cachedAddress.substring(0, 8)) {
-      console.log(`部分匹配(8位)到价格: ${normalizedAddress} => ${cachedAddress} = ${tokenPriceCache[cachedAddress]}`);
-      return tokenPriceCache[cachedAddress];
-    }
-    
-    // 如果有更长的地址，尝试匹配更多字符
-    if (normalizedAddress.length >= 12 && 
-        cachedAddress.length >= 12 &&
-        normalizedAddress.substring(0, 12) === cachedAddress.substring(0, 12)) {
-      console.log(`部分匹配(12位)到价格: ${normalizedAddress} => ${cachedAddress} = ${tokenPriceCache[cachedAddress]}`);
-      return tokenPriceCache[cachedAddress];
+  // 尝试使用前缀索引进行匹配
+  for (let prefixLength = 8; prefixLength <= 12; prefixLength += 4) {
+    if (normalizedAddress.length >= prefixLength) {
+      const prefix = normalizedAddress.substring(0, prefixLength);
+      const candidateAddresses = tokenPrefixIndex.get(prefix);
+      
+      if (candidateAddresses && candidateAddresses.length > 0) {
+        // 返回第一个匹配的地址对应的价格
+        const matchAddress = candidateAddresses[0];
+        const matchPrice = tokenPriceCache.get(matchAddress);
+        if (matchPrice !== undefined) {
+          return matchPrice;
+        }
+      }
     }
   }
   
-  console.log(`未找到代币 ${normalizedAddress} 的价格，返回0`);
   return 0;
 };
 
@@ -648,11 +669,20 @@ export const removeWebSocketListener = (
   priceEventEmitter.off(event, listener);
 };
 
+/**
+ * 批量处理价格更新，返回所有已更新的代币地址和价格
+ * @returns 价格更新Map
+ */
+export const getAllTokenPrices = (): Map<string, number> => {
+  return new Map(tokenPriceCache);
+};
+
 export default {
   connectWebSocket,
   disconnectWebSocket,
   initializeWebSocketService,
   getTokenPrice,
+  getAllTokenPrices,
   getWebSocketStatus,
   getWebSocketStats,
   addWebSocketListener,
