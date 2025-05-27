@@ -157,42 +157,37 @@ const calculateTokenProfits = (transactions: Transaction[], currentPrice: number
     if (tx.tx_type.toLowerCase().includes('buy')) {
       // 添加到持仓
       holdingAmount += tx.amount;
-      totalCost += tx.sol_amount; // 累计SOL花费
+      totalCost += tx.sol_amount; 
       
-      // 计算持仓盈利 - 对比买入时价格与当前价格
-      const buyPrice = tx.price; // token本位价格
+      // 使用正确的方法计算持仓盈利
+      const tokenCurrentValue = currentPrice * holdingAmount;
+      const tokenValueInSol = tokenCurrentValue * tx.sol_amount / tx.amount; // 估算当前持仓价值（SOL）
       
-      // 计算盈亏比例
-      // 注意：即使currentPrice很小，也直接用于计算，不做任何兜底
-        result.position_profit_percentage = buyPrice > 0 
-          ? ((currentPrice / buyPrice) - 1) * 100 
-          : 0;
-        
-        // 买入时SOL金额
-        const buyInSolAmount = tx.sol_amount;
-        
-        // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
-        const currentSolValue = buyInSolAmount * (1 + result.position_profit_percentage / 100);
-        
-        // 盈亏SOL金额 = 当前价值 - 买入SOL金额
-        result.position_profit = currentSolValue - buyInSolAmount;
+      console.log(`买入交易计算 - Token: ${tx.token_address.substring(0, 8)}, 持仓数量: ${holdingAmount}, 总成本: ${totalCost}, 当前价格: ${currentPrice}, 当前价值: ${tokenValueInSol}`);
+      
+      result.position_profit_percentage = totalCost > 0 
+        ? ((tokenValueInSol / totalCost) - 1) * 100 
+        : 0;
+      
+      result.position_profit = tokenValueInSol - totalCost;
     }
     // 卖出交易
     else if (tx.tx_type.toLowerCase().includes('sell')) {
       // 如果有持仓，计算卖出盈利
       if (holdingAmount > 0 && totalCost > 0) {
         const avgCostPerToken = totalCost / holdingAmount; // 平均每个token花费的SOL
-        const currentSellValue = tx.sol_amount; // 卖出获得的SOL
         const sellAmount = tx.amount; // 卖出的token数量
         const estimatedCost = avgCostPerToken * sellAmount; // 估算的买入成本
+        const currentSellValue = tx.sol_amount; // 卖出获得的SOL
+        
+        console.log(`卖出交易计算 - Token: ${tx.token_address.substring(0, 8)}, 卖出SOL: ${currentSellValue}, 估算成本: ${estimatedCost}, 平均成本: ${avgCostPerToken}`);
         
         // 已实现盈利 = 卖出获得SOL - 估算买入成本
         result.profit = currentSellValue - estimatedCost;
         
-        // 已实现盈利百分比 = (卖出价格 / 平均买入价格 - 1) * 100
-        const avgBuyPrice = totalCost / holdingAmount / tx.sol_amount * tx.amount; // 估算的平均买入价格
-        result.profit_percentage = tx.price > 0 && avgBuyPrice > 0 
-          ? ((tx.price / avgBuyPrice) - 1) * 100
+        // 已实现盈利百分比 = (卖出获得SOL / 估算买入成本 - 1) * 100
+        result.profit_percentage = estimatedCost > 0 
+          ? ((currentSellValue / estimatedCost) - 1) * 100
           : 0;
         
         // 更新持仓
@@ -210,21 +205,16 @@ const calculateTokenProfits = (transactions: Transaction[], currentPrice: number
       
       // 剩余持仓盈利计算逻辑同买入
       if (holdingAmount > 0 && totalCost > 0) {
-        const avgBuyPrice = totalCost / holdingAmount / tx.sol_amount * tx.amount; // 估算的平均买入价格
+        // 使用平均成本计算持仓盈利
+        const avgCostPerToken = totalCost / holdingAmount;
+        const tokenCurrentValue = currentPrice * holdingAmount;
+        const tokenValueInSol = tokenCurrentValue * tx.sol_amount / tx.amount; // 估算当前持仓价值（SOL）
         
-        // 计算盈亏比例 - 直接使用currentPrice
-          result.position_profit_percentage = avgBuyPrice > 0 
-            ? ((currentPrice / avgBuyPrice) - 1) * 100 
-            : 0;
-          
-          // 买入时SOL金额
-          const remainingSolCost = totalCost;
-          
-          // 当前价值SOL金额 = 买入SOL金额 * (1 + 盈亏比例/100)
-          const currentSolValue = remainingSolCost * (1 + result.position_profit_percentage / 100);
-          
-          // 盈亏SOL金额 = 当前价值 - 买入SOL金额
-          result.position_profit = currentSolValue - remainingSolCost;
+        result.position_profit_percentage = totalCost > 0 
+          ? ((tokenValueInSol / totalCost) - 1) * 100 
+          : 0;
+        
+        result.position_profit = tokenValueInSol - totalCost;
       } else {
         result.position_profit = 0;
         result.position_profit_percentage = 0;
