@@ -140,6 +140,11 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, solPrice, index }) 
         <div className="text-xs text-gray-400">
           {formatProfit(profitData.profit)}
         </div>
+        {solPrice > 0 && (
+          <div className="text-xs text-success-500">
+            {calculateUsdValue(profitData.profit || 0, solPrice)}
+          </div>
+        )}
       </td>
       <td className="px-4 py-3 text-right">
         {tx.tx_type.toLowerCase().includes('sell') && (
@@ -150,6 +155,11 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, solPrice, index }) 
             <div className="text-xs text-gray-400">
               {formatProfit(tx.profit)}
             </div>
+            {solPrice > 0 && (
+              <div className="text-xs text-success-500">
+                {calculateUsdValue(tx.profit || 0, solPrice)}
+              </div>
+            )}
           </>
         )}
       </td>
