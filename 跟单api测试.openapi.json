@@ -1,0 +1,2005 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "跟单api测试",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [],
+  "paths": {
+    "/api/sell": {
+      "post": {
+        "summary": "手动卖出",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token_address": {
+                    "type": "string"
+                  },
+                  "percentage": {
+                    "type": "integer"
+                  },
+                  "tip_fixed": {
+                    "type": "number"
+                  },
+                  "slippage_bps": {
+                    "type": "integer"
+                  },
+                  "priority_fee": {
+                    "type": "integer"
+                  },
+                  "follow_system_defaults": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "token_address",
+                  "percentage",
+                  "tip_fixed",
+                  "slippage_bps",
+                  "priority_fee",
+                  "follow_system_defaults"
+                ]
+              },
+              "example": {
+                "token_address": "9XeY9hMjGhD2s34cm6b9J6F1Hpvno8PY2ZF5TcGNpump",
+                "percentage": 25,
+                "tip_fixed": 0.00015525,
+                "slippage_bps": 500,
+                "priority_fee": 20000,
+                "follow_system_defaults": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "signatures": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "error": {
+                      "type": "null"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "token_address": {
+                      "type": "string"
+                    },
+                    "token_symbol": {
+                      "type": "null"
+                    },
+                    "sell_percentage": {
+                      "type": "integer"
+                    },
+                    "sell_amount": {
+                      "type": "number"
+                    },
+                    "sell_amount_raw": {
+                      "type": "integer"
+                    },
+                    "tip_amount": {
+                      "type": "number"
+                    },
+                    "zero_slot_tip": {
+                      "type": "null"
+                    },
+                    "slippage_bps": {
+                      "type": "integer"
+                    },
+                    "priority_fee": {
+                      "type": "integer"
+                    },
+                    "submitted_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "signatures",
+                    "error",
+                    "status",
+                    "token_address",
+                    "token_symbol",
+                    "sell_percentage",
+                    "sell_amount",
+                    "sell_amount_raw",
+                    "tip_amount",
+                    "zero_slot_tip",
+                    "slippage_bps",
+                    "priority_fee",
+                    "submitted_at"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "卖出交易成功完成 (25% 的代币 9XeY9hMjGhD2s34cm6b9J6F1Hpvno8PY2ZF5TcGNpump)",
+                  "signatures": [
+                    "2aHxLt6MLQNs4ACbB4mQUkVMhcXhNzYUe4k74e6ZL4o4SoXsfDoSpYBPQZgEwGEWY8KtV9rsBacB1Mk4dFyjV8Gj"
+                  ],
+                  "error": null,
+                  "status": "已完成",
+                  "token_address": "9XeY9hMjGhD2s34cm6b9J6F1Hpvno8PY2ZF5TcGNpump",
+                  "token_symbol": null,
+                  "sell_percentage": 25,
+                  "sell_amount": 88464.1136405,
+                  "sell_amount_raw": 88464113640,
+                  "tip_amount": 0.00015525,
+                  "zero_slot_tip": null,
+                  "slippage_bps": 500,
+                  "priority_fee": 20000,
+                  "submitted_at": "2025-05-06 14:49:44"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/system-status": {
+      "get": {
+        "summary": "健康检查",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "404": {
+            "description": "",
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/wallet_configs/pause": {
+      "post": {
+        "summary": "单独暂停跟单",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wallet_address": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "wallet_address"
+                ]
+              },
+              "example": {
+                "wallet_address": "D8h8aUEaQnBRALrcTxLkaLLCQVCASnLVx17E3m6qfuPF"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        },
+                        "wallet_address": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "updated_at",
+                        "wallet_address"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "message",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "data": {
+                    "status": "paused",
+                    "updated_at": "2025-05-21T16:44:42+00:00",
+                    "wallet_address": "D8h8aUEaQnBRALrcTxLkaLLCQVCASnLVx17E3m6qfuPF"
+                  },
+                  "message": "钱包跟单已暂停",
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/wallet_configs/resume": {
+      "post": {
+        "summary": "单独恢复跟单",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wallet_address": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "wallet_address"
+                ]
+              },
+              "example": {
+                "wallet_address": "D8h8aUEaQnBRALrcTxLkaLLCQVCASnLVx17E3m6qfuPF"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "wallet_address": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "wallet_address",
+                        "status",
+                        "updated_at"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "钱包跟单已恢复",
+                  "data": {
+                    "wallet_address": "D8h8aUEaQnBRALrcTxLkaLLCQVCASnLVx17E3m6qfuPF",
+                    "status": "active",
+                    "updated_at": "2025-05-21T17:12:05.340597+00:00"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/monitor-addresses": {
+      "get": {
+        "summary": "获取所有监控地址",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "sol_address": {
+                          "type": "string"
+                        },
+                        "targets": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unwanted_key": {
+                          "type": "string"
+                        },
+                        "wallets": {
+                          "type": "object",
+                          "properties": {
+                            "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN": {
+                              "type": "object",
+                              "properties": {
+                                "compute_unit_limit": {
+                                  "type": "integer"
+                                },
+                                "follow_percentage": {
+                                  "type": "integer"
+                                },
+                                "is_active": {
+                                  "type": "boolean"
+                                },
+                                "max_price_multiplier": {
+                                  "type": "number"
+                                },
+                                "min_price_multiplier": {
+                                  "type": "number"
+                                },
+                                "note": {
+                                  "type": "null"
+                                },
+                                "priority_fee": {
+                                  "type": "integer"
+                                },
+                                "slippage_percentage": {
+                                  "type": "integer"
+                                },
+                                "sol_amount_max": {
+                                  "type": "integer"
+                                },
+                                "sol_amount_min": {
+                                  "type": "number"
+                                },
+                                "tip_percentage": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "compute_unit_limit",
+                                "follow_percentage",
+                                "is_active",
+                                "max_price_multiplier",
+                                "min_price_multiplier",
+                                "note",
+                                "priority_fee",
+                                "slippage_percentage",
+                                "sol_amount_max",
+                                "sol_amount_min",
+                                "tip_percentage"
+                              ]
+                            },
+                            "3tpw9E3Zyex3yJ9onQPhi52CwRoQcD4y771kXywmaWpu": {
+                              "type": "object",
+                              "properties": {
+                                "compute_unit_limit": {
+                                  "type": "integer"
+                                },
+                                "follow_percentage": {
+                                  "type": "integer"
+                                },
+                                "is_active": {
+                                  "type": "boolean"
+                                },
+                                "max_price_multiplier": {
+                                  "type": "number"
+                                },
+                                "min_price_multiplier": {
+                                  "type": "number"
+                                },
+                                "note": {
+                                  "type": "null"
+                                },
+                                "priority_fee": {
+                                  "type": "integer"
+                                },
+                                "slippage_percentage": {
+                                  "type": "integer"
+                                },
+                                "sol_amount_max": {
+                                  "type": "integer"
+                                },
+                                "sol_amount_min": {
+                                  "type": "number"
+                                },
+                                "tip_percentage": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "compute_unit_limit",
+                                "follow_percentage",
+                                "is_active",
+                                "max_price_multiplier",
+                                "min_price_multiplier",
+                                "note",
+                                "priority_fee",
+                                "slippage_percentage",
+                                "sol_amount_max",
+                                "sol_amount_min",
+                                "tip_percentage"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN",
+                            "3tpw9E3Zyex3yJ9onQPhi52CwRoQcD4y771kXywmaWpu"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "sol_address",
+                        "targets",
+                        "unwanted_key",
+                        "wallets"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "message",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "data": {
+                    "sol_address": "So11111111111111111111111111111111111111112",
+                    "targets": [
+                      "3tpw9E3Zyex3yJ9onQPhi52CwRoQcD4y771kXywmaWpu",
+                      "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    ],
+                    "unwanted_key": "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+                    "wallets": {
+                      "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN": {
+                        "compute_unit_limit": 200000,
+                        "follow_percentage": 1,
+                        "is_active": true,
+                        "max_price_multiplier": 0.001,
+                        "min_price_multiplier": 1e-9,
+                        "note": null,
+                        "priority_fee": 50000,
+                        "slippage_percentage": 2,
+                        "sol_amount_max": 1,
+                        "sol_amount_min": 0.01,
+                        "tip_percentage": 1
+                      },
+                      "3tpw9E3Zyex3yJ9onQPhi52CwRoQcD4y771kXywmaWpu": {
+                        "compute_unit_limit": 70000,
+                        "follow_percentage": 100,
+                        "is_active": true,
+                        "max_price_multiplier": 8e-7,
+                        "min_price_multiplier": 1e-10,
+                        "note": null,
+                        "priority_fee": 50000,
+                        "slippage_percentage": 20,
+                        "sol_amount_max": 1,
+                        "sol_amount_min": 0.00001,
+                        "tip_percentage": 1
+                      }
+                    }
+                  },
+                  "message": "成功获取监控地址",
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/monitor-addresses/{address}": {
+      "get": {
+        "summary": "获取特定监控地址",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "3tpw9E3Zyex3yJ9onQPhi52CwRoQcD4y771kXywmaWpu",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wallet_address": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "wallet_address"
+                ]
+              },
+              "example": {
+                "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "address": {
+                          "type": "string"
+                        },
+                        "config": {
+                          "type": "object",
+                          "properties": {
+                            "compute_unit_limit": {
+                              "type": "integer"
+                            },
+                            "follow_percentage": {
+                              "type": "integer"
+                            },
+                            "is_active": {
+                              "type": "boolean"
+                            },
+                            "max_price_multiplier": {
+                              "type": "number"
+                            },
+                            "min_price_multiplier": {
+                              "type": "number"
+                            },
+                            "note": {
+                              "type": "null"
+                            },
+                            "priority_fee": {
+                              "type": "integer"
+                            },
+                            "slippage_percentage": {
+                              "type": "integer"
+                            },
+                            "sol_amount_max": {
+                              "type": "integer"
+                            },
+                            "sol_amount_min": {
+                              "type": "number"
+                            },
+                            "tip_percentage": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "compute_unit_limit",
+                            "follow_percentage",
+                            "is_active",
+                            "max_price_multiplier",
+                            "min_price_multiplier",
+                            "note",
+                            "priority_fee",
+                            "slippage_percentage",
+                            "sol_amount_max",
+                            "sol_amount_min",
+                            "tip_percentage"
+                          ]
+                        },
+                        "is_monitored": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "address",
+                        "config",
+                        "is_monitored"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "message",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "data": {
+                    "address": "3tpw9E3Zyex3yJ9onQPhi52CwRoQcD4y771kXywmaWpu",
+                    "config": {
+                      "compute_unit_limit": 70000,
+                      "follow_percentage": 100,
+                      "is_active": true,
+                      "max_price_multiplier": 8e-7,
+                      "min_price_multiplier": 1e-10,
+                      "note": null,
+                      "priority_fee": 50000,
+                      "slippage_percentage": 20,
+                      "sol_amount_max": 1,
+                      "sol_amount_min": 0.00001,
+                      "tip_percentage": 1
+                    },
+                    "is_monitored": true
+                  },
+                  "message": "成功获取监控地址配置",
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/deta-transactions": {
+      "get": {
+        "summary": "分页监控查询指定钱包地址的所有交易历史记录",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "wallet_address",
+            "in": "query",
+            "description": "",
+            "required": true,
+            "example": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": true,
+            "example": "20",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "",
+            "required": true,
+            "example": "0",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "amount": {
+                            "type": "integer"
+                          },
+                          "build_data": {
+                            "type": "string"
+                          },
+                          "expected_price": {
+                            "type": "number"
+                          },
+                          "price": {
+                            "type": "number"
+                          },
+                          "price_slippage": {
+                            "type": "integer"
+                          },
+                          "signature": {
+                            "type": "string"
+                          },
+                          "sol_amount": {
+                            "type": "number"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "timestamp": {
+                            "type": "string"
+                          },
+                          "token_address": {
+                            "type": "string"
+                          },
+                          "tx_type": {
+                            "type": "string"
+                          },
+                          "wallet_address": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "build_data",
+                          "expected_price",
+                          "price",
+                          "price_slippage",
+                          "signature",
+                          "sol_amount",
+                          "status",
+                          "timestamp",
+                          "token_address",
+                          "tx_type",
+                          "wallet_address"
+                        ]
+                      }
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "limit",
+                    "offset",
+                    "success",
+                    "total"
+                  ]
+                },
+                "example": {
+                  "data": [
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.8142557870153814e-8,\"raw_data\":\"TYPE: Buy\\nMINT: D65GuN4X1SGGGYjsEh6GhGE1mv5eniAntQbENQTR8sgg\\nTOKEN AMOUNT: 3505133191168\\nSOL COST: 0.1 SOL\\nTIME: 2025-05-22T17:17:54.915+08:00\\nSIGNATURE: x31bQPdQRw9Zph9zsh5q1jQrW6x8zVwKd3duWgdSjVYP6TzG8YSesTZJ6pjnnBUyGHtpZeynDZEEpRMWFEhPrgw\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\n9X63iGSesDfbWZ5bpkmRosf8yPhKCxRcoHHRAP1GVASy\\n\\nMINT地址:\\nD65GuN4X1SGGGYjsEh6GhGE1mv5eniAntQbENQTR8sgg\\n\\n关联曲线账户:\\nHeND1p1QReJKD4YTGBipFSiLN42w7EK2GuDrn5sWZv7L\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: HeND1p1QReJKD4YTGBipFSiLN42w7EK2GuDrn5sWZv7L\\n                                            VIRTUAL TOKEN RESERVES: 1069494866808832\\n                                            VIRTUAL SOL RESERVES: 30098321181\\n                                            REAL TOKEN RESERVES: 789594866808832\\n                                            REAL SOL RESERVES: 98321181\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:17:54.856+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1069494866808832\\n虚拟SOL储备: 30098321181\\n\\n价格信息:\\n当前价格: 0.000000028142557870153814 SOL\",\"signature\":\"x31bQPdQRw9Zph9zsh5q1jQrW6x8zVwKd3duWgdSjVYP6TzG8YSesTZJ6pjnnBUyGHtpZeynDZEEpRMWFEhPrgw\",\"sol_value\":0.1,\"tokenInfo\":{\"decimals\":6,\"mint\":\"D65GuN4X1SGGGYjsEh6GhGE1mv5eniAntQbENQTR8sgg\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"x31bQPdQRw9Zph9zsh5q1jQrW6x8zVwKd3duWgdSjVYP6TzG8YSesTZJ6pjnnBUyGHtpZeynDZEEpRMWFEhPrgw\"]},\"type\":\"pumpfunbuy\"}",
+                      "expected_price": 2.8142557870153817e-8,
+                      "price": 2.8142557870153817e-8,
+                      "price_slippage": 0,
+                      "signature": "x31bQPdQRw9Zph9zsh5q1jQrW6x8zVwKd3duWgdSjVYP6TzG8YSesTZJ6pjnnBUyGHtpZeynDZEEpRMWFEhPrgw",
+                      "sol_amount": 0.1,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:17:54.926924200+00:00",
+                      "token_address": "D65GuN4X1SGGGYjsEh6GhGE1mv5eniAntQbENQTR8sgg",
+                      "tx_type": "pumpfunbuy",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.8142557871088836e-8,\"raw_data\":\"TYPE: Buy\\nMINT: HFWBeVZouKmpFfrd3qhdz7RkAeCC7Qt2c3VNooAgpump\\nTOKEN AMOUNT: 3505133191168\\nSOL COST: 0.1 SOL\\nTIME: 2025-05-22T17:17:53.888+08:00\\nSIGNATURE: 3imf2QGPTCCfPSKKszvvWvcNEsjNcqihW6UgUTYUnFE4DWu8yYxWUUpVVU7Pc4eyUTFbjzB5e4ii9vJKFHwW2sn\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\ngWtV7EgxV66CjHVrjyjxciGdRoCj26h3wm56CRMnond\\n\\nMINT地址:\\nHFWBeVZouKmpFfrd3qhdz7RkAeCC7Qt2c3VNooAgpump\\n\\n关联曲线账户:\\n2hEXo4ddwraqTtJVeB9JGHdgJwo5jJZrXjUExGyfod8M\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: 2hEXo4ddwraqTtJVeB9JGHdgJwo5jJZrXjUExGyfod8M\\n                                            VIRTUAL TOKEN RESERVES: 1069494866808832\\n                                            VIRTUAL SOL RESERVES: 30098321182\\n                                            REAL TOKEN RESERVES: 789594866808832\\n                                            REAL SOL RESERVES: 98321182\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:17:53.869+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1069494866808832\\n虚拟SOL储备: 30098321182\\n\\n价格信息:\\n当前价格: 0.000000028142557871088836 SOL\",\"signature\":\"3imf2QGPTCCfPSKKszvvWvcNEsjNcqihW6UgUTYUnFE4DWu8yYxWUUpVVU7Pc4eyUTFbjzB5e4ii9vJKFHwW2sn\",\"sol_value\":0.1,\"tokenInfo\":{\"decimals\":6,\"mint\":\"HFWBeVZouKmpFfrd3qhdz7RkAeCC7Qt2c3VNooAgpump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"3imf2QGPTCCfPSKKszvvWvcNEsjNcqihW6UgUTYUnFE4DWu8yYxWUUpVVU7Pc4eyUTFbjzB5e4ii9vJKFHwW2sn\"]},\"type\":\"pumpfunbuy\"}",
+                      "expected_price": 2.8142557871088836e-8,
+                      "price": 2.8142557871088836e-8,
+                      "price_slippage": 0,
+                      "signature": "3imf2QGPTCCfPSKKszvvWvcNEsjNcqihW6UgUTYUnFE4DWu8yYxWUUpVVU7Pc4eyUTFbjzB5e4ii9vJKFHwW2sn",
+                      "sol_amount": 0.1,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:17:53.893641400+00:00",
+                      "token_address": "HFWBeVZouKmpFfrd3qhdz7RkAeCC7Qt2c3VNooAgpump",
+                      "tx_type": "pumpfunbuy",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.814255787295888e-8,\"raw_data\":\"TYPE: Sell\\nMINT: EdK3nDyrVatwNV496sdBjYS4XxoaChhRdnLbV2r6pump\\nTOKEN AMOUNT: 3505133191168\\nMIN SOL OUTPUT: 0.009864344 SOL\\nTIME: 2025-05-22T17:17:47.386+08:00\\nSIGNATURE: dQars3gGYBkejUuK8XCbSBZ2yUau4TVXr1CBr8QyXQA2vhKBWo9zNxW3NBPsFL1k7y8xrRKEGvvZvCEKxkMJhT4\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nD2P2THE145nmdDheLj4uVSpYhAWfvqTkwDjATvdgzVcZ\\n\\n关联曲线账户:\\nCiKup2x4V6fArqYzmixvAMHKAq9dp2YJsp3rUWqxKzMb\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: CiKup2x4V6fArqYzmixvAMHKAq9dp2YJsp3rUWqxKzMb\\n                                            VIRTUAL TOKEN RESERVES: 1069494866808832\\n                                            VIRTUAL SOL RESERVES: 30098321184\\n                                            REAL TOKEN RESERVES: 789594866808832\\n                                            REAL SOL RESERVES: 98321184\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:17:39.187+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1069494866808832\\n虚拟SOL储备: 30098321184\\n\\n价格信息:\\n当前价格: 0.00000002814255787295888 SOL\",\"signature\":\"dQars3gGYBkejUuK8XCbSBZ2yUau4TVXr1CBr8QyXQA2vhKBWo9zNxW3NBPsFL1k7y8xrRKEGvvZvCEKxkMJhT4\",\"sol_value\":0.009864344,\"tokenInfo\":{\"decimals\":6,\"mint\":\"EdK3nDyrVatwNV496sdBjYS4XxoaChhRdnLbV2r6pump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"dQars3gGYBkejUuK8XCbSBZ2yUau4TVXr1CBr8QyXQA2vhKBWo9zNxW3NBPsFL1k7y8xrRKEGvvZvCEKxkMJhT4\"]},\"type\":\"pumpfunsell\"}",
+                      "expected_price": 2.8142557872958882e-8,
+                      "price": 2.8142557872958882e-8,
+                      "price_slippage": 0,
+                      "signature": "dQars3gGYBkejUuK8XCbSBZ2yUau4TVXr1CBr8QyXQA2vhKBWo9zNxW3NBPsFL1k7y8xrRKEGvvZvCEKxkMJhT4",
+                      "sol_amount": 0.009864344,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:17:47.390893400+00:00",
+                      "token_address": "EdK3nDyrVatwNV496sdBjYS4XxoaChhRdnLbV2r6pump",
+                      "tx_type": "pumpfunsell",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.8343416020144923e-8,\"raw_data\":\"TYPE: Sell\\nMINT: 7ikgPFsAnENfdCTzehpoKRTURz7mFZaffri8sz22pump\\nTOKEN AMOUNT: 3505133191168\\nMIN SOL OUTPUT: 0.009934744 SOL\\nTIME: 2025-05-22T17:17:43.628+08:00\\nSIGNATURE: 2rUbrZZysRen359rizaieGeP6DPddeAtUXAQdoTEB8LET7LQmGFVJYsHwaehkofpaisqB8DYggDoj86heLWRPPjM\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nAAzFY7B6jrWJdadfNBLhF67wx5HvK2584LCdLqKJ3Qf\\n\\n关联曲线账户:\\n3EGhmrFkZYFZNp3gJika9i9pPXSzNhkNmZDWqTjrJY91\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: 3EGhmrFkZYFZNp3gJika9i9pPXSzNhkNmZDWqTjrJY91\\n                                            VIRTUAL TOKEN RESERVES: 1065698593759185\\n                                            VIRTUAL SOL RESERVES: 30205538595\\n                                            REAL TOKEN RESERVES: 785798593759185\\n                                            REAL SOL RESERVES: 205538595\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:17:24.473+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1065698593759185\\n虚拟SOL储备: 30205538595\\n\\n价格信息:\\n当前价格: 0.000000028343416020144923 SOL\",\"signature\":\"2rUbrZZysRen359rizaieGeP6DPddeAtUXAQdoTEB8LET7LQmGFVJYsHwaehkofpaisqB8DYggDoj86heLWRPPjM\",\"sol_value\":0.009934744,\"tokenInfo\":{\"decimals\":6,\"mint\":\"7ikgPFsAnENfdCTzehpoKRTURz7mFZaffri8sz22pump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"2rUbrZZysRen359rizaieGeP6DPddeAtUXAQdoTEB8LET7LQmGFVJYsHwaehkofpaisqB8DYggDoj86heLWRPPjM\"]},\"type\":\"pumpfunsell\"}",
+                      "expected_price": 2.8343416020144923e-8,
+                      "price": 2.8343416020144923e-8,
+                      "price_slippage": 0,
+                      "signature": "2rUbrZZysRen359rizaieGeP6DPddeAtUXAQdoTEB8LET7LQmGFVJYsHwaehkofpaisqB8DYggDoj86heLWRPPjM",
+                      "sol_amount": 0.009934744,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:17:43.632907800+00:00",
+                      "token_address": "7ikgPFsAnENfdCTzehpoKRTURz7mFZaffri8sz22pump",
+                      "tx_type": "pumpfunsell",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.8331106659346746e-8,\"raw_data\":\"TYPE: Buy\\nMINT: 7ikgPFsAnENfdCTzehpoKRTURz7mFZaffri8sz22pump\\nTOKEN AMOUNT: 3505133191168\\nSOL COST: 0.1 SOL\\nTIME: 2025-05-22T17:17:23.867+08:00\\nSIGNATURE: 4fEpUdDy4xmbHdy46xTCyP1jRVoSTUKK7oLD9NX8FHpT6WM6nLwNqZJ6xDkZGdGE5pHvb6GUiRccJswHkfmJkYnt\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nAAzFY7B6jrWJdadfNBLhF67wx5HvK2584LCdLqKJ3Qf\\n\\nMINT地址:\\n7ikgPFsAnENfdCTzehpoKRTURz7mFZaffri8sz22pump\\n\\n关联曲线账户:\\n3EGhmrFkZYFZNp3gJika9i9pPXSzNhkNmZDWqTjrJY91\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: 3EGhmrFkZYFZNp3gJika9i9pPXSzNhkNmZDWqTjrJY91\\n                                            VIRTUAL TOKEN RESERVES: 1065930082121837\\n                                            VIRTUAL SOL RESERVES: 30198978848\\n                                            REAL TOKEN RESERVES: 786030082121837\\n                                            REAL SOL RESERVES: 198978848\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:17:23.745+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1065930082121837\\n虚拟SOL储备: 30198978848\\n\\n价格信息:\\n当前价格: 0.000000028331106659346746 SOL\",\"signature\":\"4fEpUdDy4xmbHdy46xTCyP1jRVoSTUKK7oLD9NX8FHpT6WM6nLwNqZJ6xDkZGdGE5pHvb6GUiRccJswHkfmJkYnt\",\"sol_value\":0.1,\"tokenInfo\":{\"decimals\":6,\"mint\":\"7ikgPFsAnENfdCTzehpoKRTURz7mFZaffri8sz22pump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"4fEpUdDy4xmbHdy46xTCyP1jRVoSTUKK7oLD9NX8FHpT6WM6nLwNqZJ6xDkZGdGE5pHvb6GUiRccJswHkfmJkYnt\"]},\"type\":\"pumpfunbuy\"}",
+                      "expected_price": 2.8331106659346743e-8,
+                      "price": 2.8331106659346743e-8,
+                      "price_slippage": 0,
+                      "signature": "4fEpUdDy4xmbHdy46xTCyP1jRVoSTUKK7oLD9NX8FHpT6WM6nLwNqZJ6xDkZGdGE5pHvb6GUiRccJswHkfmJkYnt",
+                      "sol_amount": 0.1,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:17:23.872367700+00:00",
+                      "token_address": "7ikgPFsAnENfdCTzehpoKRTURz7mFZaffri8sz22pump",
+                      "tx_type": "pumpfunbuy",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.833110666121674e-8,\"raw_data\":\"TYPE: Buy\\nMINT: EdK3nDyrVatwNV496sdBjYS4XxoaChhRdnLbV2r6pump\\nTOKEN AMOUNT: 3505133191168\\nSOL COST: 0.1 SOL\\nTIME: 2025-05-22T17:17:06.901+08:00\\nSIGNATURE: UsniUPfDr7JDSzB4TL3wgGgyuGRUwRuj7fxc2LugbfNFpPFsvHJDfQ26s4c36CyjkuQY8KeGcCdQdhDWKdh7MFa\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nD2P2THE145nmdDheLj4uVSpYhAWfvqTkwDjATvdgzVcZ\\n\\nMINT地址:\\nEdK3nDyrVatwNV496sdBjYS4XxoaChhRdnLbV2r6pump\\n\\n关联曲线账户:\\nCiKup2x4V6fArqYzmixvAMHKAq9dp2YJsp3rUWqxKzMb\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: CiKup2x4V6fArqYzmixvAMHKAq9dp2YJsp3rUWqxKzMb\\n                                            VIRTUAL TOKEN RESERVES: 1065930082122074\\n                                            VIRTUAL SOL RESERVES: 30198978850\\n                                            REAL TOKEN RESERVES: 786030082122074\\n                                            REAL SOL RESERVES: 198978850\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:17:06.734+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1065930082122074\\n虚拟SOL储备: 30198978850\\n\\n价格信息:\\n当前价格: 0.00000002833110666121674 SOL\",\"signature\":\"UsniUPfDr7JDSzB4TL3wgGgyuGRUwRuj7fxc2LugbfNFpPFsvHJDfQ26s4c36CyjkuQY8KeGcCdQdhDWKdh7MFa\",\"sol_value\":0.1,\"tokenInfo\":{\"decimals\":6,\"mint\":\"EdK3nDyrVatwNV496sdBjYS4XxoaChhRdnLbV2r6pump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"UsniUPfDr7JDSzB4TL3wgGgyuGRUwRuj7fxc2LugbfNFpPFsvHJDfQ26s4c36CyjkuQY8KeGcCdQdhDWKdh7MFa\"]},\"type\":\"pumpfunbuy\"}",
+                      "expected_price": 2.8331106661216744e-8,
+                      "price": 2.8331106661216744e-8,
+                      "price_slippage": 0,
+                      "signature": "UsniUPfDr7JDSzB4TL3wgGgyuGRUwRuj7fxc2LugbfNFpPFsvHJDfQ26s4c36CyjkuQY8KeGcCdQdhDWKdh7MFa",
+                      "sol_amount": 0.1,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:17:06.906917700+00:00",
+                      "token_address": "EdK3nDyrVatwNV496sdBjYS4XxoaChhRdnLbV2r6pump",
+                      "tx_type": "pumpfunbuy",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.853878685818953e-8,\"raw_data\":\"TYPE: Sell\\nMINT: J9Z2G3BLqFYef6xzdMCg7HoUs4AHXCUetNQSVoQGpump\\nTOKEN AMOUNT: 3505133191168\\nMIN SOL OUTPUT: 0.009998176 SOL\\nTIME: 2025-05-22T17:16:21.135+08:00\\nSIGNATURE: 2rpmEvyVjgqeEirFU1Ds2uVYY5YgJLaEj1udwBKuFCak2HvxMBexLP1GMEbqwpapQWhniSVX2d8piYYCuGrZL3VE\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nEbHMXzh9NdefQLB2L3WgMsMKzWMknD78NJXLa25gdznx\\n\\n关联曲线账户:\\n7GRznVX1EjEPLZra1w8oMt39KvJowcphDzEWkwnRFko6\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: 7GRznVX1EjEPLZra1w8oMt39KvJowcphDzEWkwnRFko6\\n                                            VIRTUAL TOKEN RESERVES: 1062044549391992\\n                                            VIRTUAL SOL RESERVES: 30309463029\\n                                            REAL TOKEN RESERVES: 782144549391992\\n                                            REAL SOL RESERVES: 309463029\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:16:19.664+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1062044549391992\\n虚拟SOL储备: 30309463029\\n\\n价格信息:\\n当前价格: 0.00000002853878685818953 SOL\",\"signature\":\"2rpmEvyVjgqeEirFU1Ds2uVYY5YgJLaEj1udwBKuFCak2HvxMBexLP1GMEbqwpapQWhniSVX2d8piYYCuGrZL3VE\",\"sol_value\":0.009998176,\"tokenInfo\":{\"decimals\":6,\"mint\":\"J9Z2G3BLqFYef6xzdMCg7HoUs4AHXCUetNQSVoQGpump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"2rpmEvyVjgqeEirFU1Ds2uVYY5YgJLaEj1udwBKuFCak2HvxMBexLP1GMEbqwpapQWhniSVX2d8piYYCuGrZL3VE\"]},\"type\":\"pumpfunsell\"}",
+                      "expected_price": 2.8538786858189532e-8,
+                      "price": 2.8538786858189532e-8,
+                      "price_slippage": 0,
+                      "signature": "2rpmEvyVjgqeEirFU1Ds2uVYY5YgJLaEj1udwBKuFCak2HvxMBexLP1GMEbqwpapQWhniSVX2d8piYYCuGrZL3VE",
+                      "sol_amount": 0.009998176,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:16:21.140471400+00:00",
+                      "token_address": "J9Z2G3BLqFYef6xzdMCg7HoUs4AHXCUetNQSVoQGpump",
+                      "tx_type": "pumpfunsell",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.8142557872418697e-8,\"raw_data\":\"TYPE: Buy\\nMINT: J9Z2G3BLqFYef6xzdMCg7HoUs4AHXCUetNQSVoQGpump\\nTOKEN AMOUNT: 3505133191168\\nSOL COST: 0.1 SOL\\nTIME: 2025-05-22T17:16:05.619+08:00\\nSIGNATURE: 2YQBEtDFvSZtKPMP1U8TQHLSrC1a5shtBhZ8U1XSHN7euNa1hPJR4h47ErX1tEWQQLfsfWNuVFh4XL9GxnrYvwyp\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nEbHMXzh9NdefQLB2L3WgMsMKzWMknD78NJXLa25gdznx\\n\\nMINT地址:\\nJ9Z2G3BLqFYef6xzdMCg7HoUs4AHXCUetNQSVoQGpump\\n\\n关联曲线账户:\\n7GRznVX1EjEPLZra1w8oMt39KvJowcphDzEWkwnRFko6\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: 7GRznVX1EjEPLZra1w8oMt39KvJowcphDzEWkwnRFko6\\n                                            VIRTUAL TOKEN RESERVES: 1069494866793827\\n                                            VIRTUAL SOL RESERVES: 30098321183\\n                                            REAL TOKEN RESERVES: 789594866793827\\n                                            REAL SOL RESERVES: 98321183\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:16:05.556+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1069494866793827\\n虚拟SOL储备: 30098321183\\n\\n价格信息:\\n当前价格: 0.000000028142557872418697 SOL\",\"signature\":\"2YQBEtDFvSZtKPMP1U8TQHLSrC1a5shtBhZ8U1XSHN7euNa1hPJR4h47ErX1tEWQQLfsfWNuVFh4XL9GxnrYvwyp\",\"sol_value\":0.1,\"tokenInfo\":{\"decimals\":6,\"mint\":\"J9Z2G3BLqFYef6xzdMCg7HoUs4AHXCUetNQSVoQGpump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"2YQBEtDFvSZtKPMP1U8TQHLSrC1a5shtBhZ8U1XSHN7euNa1hPJR4h47ErX1tEWQQLfsfWNuVFh4XL9GxnrYvwyp\"]},\"type\":\"pumpfunbuy\"}",
+                      "expected_price": 2.8142557872418697e-8,
+                      "price": 2.8142557872418697e-8,
+                      "price_slippage": 0,
+                      "signature": "2YQBEtDFvSZtKPMP1U8TQHLSrC1a5shtBhZ8U1XSHN7euNa1hPJR4h47ErX1tEWQQLfsfWNuVFh4XL9GxnrYvwyp",
+                      "sol_amount": 0.1,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:16:05.627231700+00:00",
+                      "token_address": "J9Z2G3BLqFYef6xzdMCg7HoUs4AHXCUetNQSVoQGpump",
+                      "tx_type": "pumpfunbuy",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":3.057190427208383e-8,\"raw_data\":\"TYPE: Sell\\nMINT: J9NoDLeud3R5yTHam9iSuX86kb6ik4tUWavhgducpump\\nTOKEN AMOUNT: 3505133191168\\nMIN SOL OUTPUT: 0.010789448 SOL\\nTIME: 2025-05-22T17:16:04.832+08:00\\nSIGNATURE: 5AtVYoP5b9RTEZ7Ckhhy3Wsa1Tuo2wPhNe5x1zfVgsqbtYST1VFiLoHfxXZErh4h4LCo4Uh1QzkKJRrBEfVeULFh\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nDKaM844erndVJXRHwAKUueCgdK2xcgYuFEZixVFmMkUs\\n\\n关联曲线账户:\\n6KSnD1uE93Y2gQ48qYfEH9HCAT3wMj6sxKiNTiSZoN8P\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: 6KSnD1uE93Y2gQ48qYfEH9HCAT3wMj6sxKiNTiSZoN8P\\n                                            VIRTUAL TOKEN RESERVES: 1026122576232368\\n                                            VIRTUAL SOL RESERVES: 31370521172\\n                                            REAL TOKEN RESERVES: 746222576232368\\n                                            REAL SOL RESERVES: 1370521172\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:16:04.813+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1026122576232368\\n虚拟SOL储备: 31370521172\\n\\n价格信息:\\n当前价格: 0.00000003057190427208383 SOL\",\"signature\":\"5AtVYoP5b9RTEZ7Ckhhy3Wsa1Tuo2wPhNe5x1zfVgsqbtYST1VFiLoHfxXZErh4h4LCo4Uh1QzkKJRrBEfVeULFh\",\"sol_value\":0.010789448,\"tokenInfo\":{\"decimals\":6,\"mint\":\"J9NoDLeud3R5yTHam9iSuX86kb6ik4tUWavhgducpump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"5AtVYoP5b9RTEZ7Ckhhy3Wsa1Tuo2wPhNe5x1zfVgsqbtYST1VFiLoHfxXZErh4h4LCo4Uh1QzkKJRrBEfVeULFh\"]},\"type\":\"pumpfunsell\"}",
+                      "expected_price": 3.057190427208383e-8,
+                      "price": 3.057190427208383e-8,
+                      "price_slippage": 0,
+                      "signature": "5AtVYoP5b9RTEZ7Ckhhy3Wsa1Tuo2wPhNe5x1zfVgsqbtYST1VFiLoHfxXZErh4h4LCo4Uh1QzkKJRrBEfVeULFh",
+                      "sol_amount": 0.010789448,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:16:04.837697+00:00",
+                      "token_address": "J9NoDLeud3R5yTHam9iSuX86kb6ik4tUWavhgducpump",
+                      "tx_type": "pumpfunsell",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.8238668959858665e-8,\"raw_data\":\"TYPE: Sell\\nMINT: 6LxWYUZQwJCk7gGamY8N1yFZ6zDXpGsCT3EzyiYBpump\\nTOKEN AMOUNT: 3505133191168\\nMIN SOL OUTPUT: 0.009963344 SOL\\nTIME: 2025-05-22T17:16:01.617+08:00\\nSIGNATURE: 8YzV1Gus5Ksb5NwX9PXotHW8b9SqMYpV2RA4Y6a52VoWgPGz5wArtX2pZLjVGEjGP9f5XXwNYwz4iNJSs8F1gZH\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\n9RN9e9quugtHMny3xNHUZHXd89GNgWFWXh1iP94KTWTW\\n\\n关联曲线账户:\\nAAqoKd1SBrpdq7ME8MTMt66uSw5e53LUJBAefaHFMPb4\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: AAqoKd1SBrpdq7ME8MTMt66uSw5e53LUJBAefaHFMPb4\\n                                            VIRTUAL TOKEN RESERVES: 1067673287925073\\n                                            VIRTUAL SOL RESERVES: 30149672535\\n                                            REAL TOKEN RESERVES: 787773287925073\\n                                            REAL SOL RESERVES: 149672535\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:16:01.550+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1067673287925073\\n虚拟SOL储备: 30149672535\\n\\n价格信息:\\n当前价格: 0.000000028238668959858665 SOL\",\"signature\":\"8YzV1Gus5Ksb5NwX9PXotHW8b9SqMYpV2RA4Y6a52VoWgPGz5wArtX2pZLjVGEjGP9f5XXwNYwz4iNJSs8F1gZH\",\"sol_value\":0.009963344,\"tokenInfo\":{\"decimals\":6,\"mint\":\"6LxWYUZQwJCk7gGamY8N1yFZ6zDXpGsCT3EzyiYBpump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"8YzV1Gus5Ksb5NwX9PXotHW8b9SqMYpV2RA4Y6a52VoWgPGz5wArtX2pZLjVGEjGP9f5XXwNYwz4iNJSs8F1gZH\"]},\"type\":\"pumpfunsell\"}",
+                      "expected_price": 2.8238668959858665e-8,
+                      "price": 2.8238668959858665e-8,
+                      "price_slippage": 0,
+                      "signature": "8YzV1Gus5Ksb5NwX9PXotHW8b9SqMYpV2RA4Y6a52VoWgPGz5wArtX2pZLjVGEjGP9f5XXwNYwz4iNJSs8F1gZH",
+                      "sol_amount": 0.009963344,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:16:01.623021100+00:00",
+                      "token_address": "6LxWYUZQwJCk7gGamY8N1yFZ6zDXpGsCT3EzyiYBpump",
+                      "tx_type": "pumpfunsell",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.8331106659503216e-8,\"raw_data\":\"TYPE: Buy\\nMINT: 6LxWYUZQwJCk7gGamY8N1yFZ6zDXpGsCT3EzyiYBpump\\nTOKEN AMOUNT: 3505133191168\\nSOL COST: 0.1 SOL\\nTIME: 2025-05-22T17:15:40.850+08:00\\nSIGNATURE: 2R6YkPZVuTDei98zWS8x94Jrz8zFqFxmdNjyRUVTpSmYrYhCXAqpVJiuDZ8Nik776a1c4vhirCfxW47uzRkpYZV2\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\n9RN9e9quugtHMny3xNHUZHXd89GNgWFWXh1iP94KTWTW\\n\\nMINT地址:\\n6LxWYUZQwJCk7gGamY8N1yFZ6zDXpGsCT3EzyiYBpump\\n\\n关联曲线账户:\\nAAqoKd1SBrpdq7ME8MTMt66uSw5e53LUJBAefaHFMPb4\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: AAqoKd1SBrpdq7ME8MTMt66uSw5e53LUJBAefaHFMPb4\\n                                            VIRTUAL TOKEN RESERVES: 1065930082115950\\n                                            VIRTUAL SOL RESERVES: 30198978848\\n                                            REAL TOKEN RESERVES: 786030082115950\\n                                            REAL SOL RESERVES: 198978848\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:15:40.827+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1065930082115950\\n虚拟SOL储备: 30198978848\\n\\n价格信息:\\n当前价格: 0.000000028331106659503216 SOL\",\"signature\":\"2R6YkPZVuTDei98zWS8x94Jrz8zFqFxmdNjyRUVTpSmYrYhCXAqpVJiuDZ8Nik776a1c4vhirCfxW47uzRkpYZV2\",\"sol_value\":0.1,\"tokenInfo\":{\"decimals\":6,\"mint\":\"6LxWYUZQwJCk7gGamY8N1yFZ6zDXpGsCT3EzyiYBpump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"2R6YkPZVuTDei98zWS8x94Jrz8zFqFxmdNjyRUVTpSmYrYhCXAqpVJiuDZ8Nik776a1c4vhirCfxW47uzRkpYZV2\"]},\"type\":\"pumpfunbuy\"}",
+                      "expected_price": 2.8331106659503216e-8,
+                      "price": 2.8331106659503216e-8,
+                      "price_slippage": 0,
+                      "signature": "2R6YkPZVuTDei98zWS8x94Jrz8zFqFxmdNjyRUVTpSmYrYhCXAqpVJiuDZ8Nik776a1c4vhirCfxW47uzRkpYZV2",
+                      "sol_amount": 0.1,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:15:40.855675400+00:00",
+                      "token_address": "6LxWYUZQwJCk7gGamY8N1yFZ6zDXpGsCT3EzyiYBpump",
+                      "tx_type": "pumpfunbuy",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.8142557869218792e-8,\"raw_data\":\"TYPE: Buy\\nMINT: J9NoDLeud3R5yTHam9iSuX86kb6ik4tUWavhgducpump\\nTOKEN AMOUNT: 3505133191168\\nSOL COST: 0.1 SOL\\nTIME: 2025-05-22T17:15:30.483+08:00\\nSIGNATURE: 3nFRHmvF7gEBddBDY8zKP4XH8mKS5jNxKW2c1oe9nq1Tdz4CmC4v7agVxTUMiZ541jvbF5LiNE8Y213Le61NAgEc\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nDKaM844erndVJXRHwAKUueCgdK2xcgYuFEZixVFmMkUs\\n\\nMINT地址:\\nJ9NoDLeud3R5yTHam9iSuX86kb6ik4tUWavhgducpump\\n\\n关联曲线账户:\\n6KSnD1uE93Y2gQ48qYfEH9HCAT3wMj6sxKiNTiSZoN8P\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: 6KSnD1uE93Y2gQ48qYfEH9HCAT3wMj6sxKiNTiSZoN8P\\n                                            VIRTUAL TOKEN RESERVES: 1069494866808832\\n                                            VIRTUAL SOL RESERVES: 30098321180\\n                                            REAL TOKEN RESERVES: 789594866808832\\n                                            REAL SOL RESERVES: 98321180\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:15:30.466+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1069494866808832\\n虚拟SOL储备: 30098321180\\n\\n价格信息:\\n当前价格: 0.000000028142557869218792 SOL\",\"signature\":\"3nFRHmvF7gEBddBDY8zKP4XH8mKS5jNxKW2c1oe9nq1Tdz4CmC4v7agVxTUMiZ541jvbF5LiNE8Y213Le61NAgEc\",\"sol_value\":0.1,\"tokenInfo\":{\"decimals\":6,\"mint\":\"J9NoDLeud3R5yTHam9iSuX86kb6ik4tUWavhgducpump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"3nFRHmvF7gEBddBDY8zKP4XH8mKS5jNxKW2c1oe9nq1Tdz4CmC4v7agVxTUMiZ541jvbF5LiNE8Y213Le61NAgEc\"]},\"type\":\"pumpfunbuy\"}",
+                      "expected_price": 2.8142557869218792e-8,
+                      "price": 2.8142557869218792e-8,
+                      "price_slippage": 0,
+                      "signature": "3nFRHmvF7gEBddBDY8zKP4XH8mKS5jNxKW2c1oe9nq1Tdz4CmC4v7agVxTUMiZ541jvbF5LiNE8Y213Le61NAgEc",
+                      "sol_amount": 0.1,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:15:30.488361900+00:00",
+                      "token_address": "J9NoDLeud3R5yTHam9iSuX86kb6ik4tUWavhgducpump",
+                      "tx_type": "pumpfunbuy",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.7972788449559862e-8,\"raw_data\":\"TYPE: Sell\\nMINT: 2UHnVyQKjKBn22kiYwBkbVssbJWXbuZqrg86KNaepump\\nTOKEN AMOUNT: 3505133191168\\nMIN SOL OUTPUT: 0.009869224 SOL\\nTIME: 2025-05-22T17:14:37.121+08:00\\nSIGNATURE: 2XRDTzSuyHyfTonH28CnyxY1C2BUoAJj3wZa7EAwH75YtpEdjE68LT6cXWZSaCf7dXeJnXD6QWqiyicRUXnesWHU\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nFdb7pBfiFe3Y9CtKCJ9t2KGYitVHZNz3xAqPBmHRKnaW\\n\\n关联曲线账户:\\nHniQ6CT3sKtRXhi7cBLyBZx94VYtqKWgZoLHwkNqnw3c\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: HniQ6CT3sKtRXhi7cBLyBZx94VYtqKWgZoLHwkNqnw3c\\n                                            VIRTUAL TOKEN RESERVES: 1072735388755001\\n                                            VIRTUAL SOL RESERVES: 30007400092\\n                                            REAL TOKEN RESERVES: 792835388755001\\n                                            REAL SOL RESERVES: 7400092\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:14:36.972+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1072735388755001\\n虚拟SOL储备: 30007400092\\n\\n价格信息:\\n当前价格: 0.000000027972788449559862 SOL\",\"signature\":\"2XRDTzSuyHyfTonH28CnyxY1C2BUoAJj3wZa7EAwH75YtpEdjE68LT6cXWZSaCf7dXeJnXD6QWqiyicRUXnesWHU\",\"sol_value\":0.009869224,\"tokenInfo\":{\"decimals\":6,\"mint\":\"2UHnVyQKjKBn22kiYwBkbVssbJWXbuZqrg86KNaepump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"2XRDTzSuyHyfTonH28CnyxY1C2BUoAJj3wZa7EAwH75YtpEdjE68LT6cXWZSaCf7dXeJnXD6QWqiyicRUXnesWHU\"]},\"type\":\"pumpfunsell\"}",
+                      "expected_price": 2.7972788449559865e-8,
+                      "price": 2.7972788449559865e-8,
+                      "price_slippage": 0,
+                      "signature": "2XRDTzSuyHyfTonH28CnyxY1C2BUoAJj3wZa7EAwH75YtpEdjE68LT6cXWZSaCf7dXeJnXD6QWqiyicRUXnesWHU",
+                      "sol_amount": 0.009869224,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:14:37.127084300+00:00",
+                      "token_address": "2UHnVyQKjKBn22kiYwBkbVssbJWXbuZqrg86KNaepump",
+                      "tx_type": "pumpfunsell",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.7972788287357685e-8,\"raw_data\":\"TYPE: Sell\\nMINT: ANQZTZSg2i54fUH9MZPVnHCcns3qJ2gW6JVuGyvpump\\nTOKEN AMOUNT: 3505133191168\\nMIN SOL OUTPUT: 0.009869224 SOL\\nTIME: 2025-05-22T17:14:29.267+08:00\\nSIGNATURE: 5tUWid68KgE7Ucunjtb82fHEmhv1XJ6kimm5d8czAp4HueM4PXoWjbAEXpz2NHBxpMdAa45SqaDTCRZaoNLYr268\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\n6dPEBkyuPXRukBmNyuKBkUDwsrE7LvdeZyeRERX3JU2Q\\n\\n关联曲线账户:\\nFX2WchmfdeLrr7mwXwYawnJTNASpbpXNDYtdjJvcoJVQ\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: FX2WchmfdeLrr7mwXwYawnJTNASpbpXNDYtdjJvcoJVQ\\n                                            VIRTUAL TOKEN RESERVES: 1072735391865167\\n                                            VIRTUAL SOL RESERVES: 30007400005\\n                                            REAL TOKEN RESERVES: 792835391865167\\n                                            REAL SOL RESERVES: 7400005\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:14:29.149+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1072735391865167\\n虚拟SOL储备: 30007400005\\n\\n价格信息:\\n当前价格: 0.000000027972788287357685 SOL\",\"signature\":\"5tUWid68KgE7Ucunjtb82fHEmhv1XJ6kimm5d8czAp4HueM4PXoWjbAEXpz2NHBxpMdAa45SqaDTCRZaoNLYr268\",\"sol_value\":0.009869224,\"tokenInfo\":{\"decimals\":6,\"mint\":\"ANQZTZSg2i54fUH9MZPVnHCcns3qJ2gW6JVuGyvpump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"5tUWid68KgE7Ucunjtb82fHEmhv1XJ6kimm5d8czAp4HueM4PXoWjbAEXpz2NHBxpMdAa45SqaDTCRZaoNLYr268\"]},\"type\":\"pumpfunsell\"}",
+                      "expected_price": 2.7972788287357685e-8,
+                      "price": 2.7972788287357685e-8,
+                      "price_slippage": 0,
+                      "signature": "5tUWid68KgE7Ucunjtb82fHEmhv1XJ6kimm5d8czAp4HueM4PXoWjbAEXpz2NHBxpMdAa45SqaDTCRZaoNLYr268",
+                      "sol_amount": 0.009869224,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:14:29.272358300+00:00",
+                      "token_address": "ANQZTZSg2i54fUH9MZPVnHCcns3qJ2gW6JVuGyvpump",
+                      "tx_type": "pumpfunsell",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.8142557869218792e-8,\"raw_data\":\"TYPE: Buy\\nMINT: 2UHnVyQKjKBn22kiYwBkbVssbJWXbuZqrg86KNaepump\\nTOKEN AMOUNT: 3505133191168\\nSOL COST: 0.1 SOL\\nTIME: 2025-05-22T17:13:58.162+08:00\\nSIGNATURE: 45k8aZZWLJhageJuWPrbCsAMHeHyK5SrJZu5K3WPEh5LzoamewBwfg323MGj3JtqVyiUjYhBzAjyZ8WjiLit7J3o\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nFdb7pBfiFe3Y9CtKCJ9t2KGYitVHZNz3xAqPBmHRKnaW\\n\\nMINT地址:\\n2UHnVyQKjKBn22kiYwBkbVssbJWXbuZqrg86KNaepump\\n\\n关联曲线账户:\\nHniQ6CT3sKtRXhi7cBLyBZx94VYtqKWgZoLHwkNqnw3c\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: HniQ6CT3sKtRXhi7cBLyBZx94VYtqKWgZoLHwkNqnw3c\\n                                            VIRTUAL TOKEN RESERVES: 1069494866808832\\n                                            VIRTUAL SOL RESERVES: 30098321180\\n                                            REAL TOKEN RESERVES: 789594866808832\\n                                            REAL SOL RESERVES: 98321180\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:13:58.147+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1069494866808832\\n虚拟SOL储备: 30098321180\\n\\n价格信息:\\n当前价格: 0.000000028142557869218792 SOL\",\"signature\":\"45k8aZZWLJhageJuWPrbCsAMHeHyK5SrJZu5K3WPEh5LzoamewBwfg323MGj3JtqVyiUjYhBzAjyZ8WjiLit7J3o\",\"sol_value\":0.1,\"tokenInfo\":{\"decimals\":6,\"mint\":\"2UHnVyQKjKBn22kiYwBkbVssbJWXbuZqrg86KNaepump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"45k8aZZWLJhageJuWPrbCsAMHeHyK5SrJZu5K3WPEh5LzoamewBwfg323MGj3JtqVyiUjYhBzAjyZ8WjiLit7J3o\"]},\"type\":\"pumpfunbuy\"}",
+                      "expected_price": 2.8142557869218792e-8,
+                      "price": 2.8142557869218792e-8,
+                      "price_slippage": 0,
+                      "signature": "45k8aZZWLJhageJuWPrbCsAMHeHyK5SrJZu5K3WPEh5LzoamewBwfg323MGj3JtqVyiUjYhBzAjyZ8WjiLit7J3o",
+                      "sol_amount": 0.1,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:13:58.176839300+00:00",
+                      "token_address": "2UHnVyQKjKBn22kiYwBkbVssbJWXbuZqrg86KNaepump",
+                      "tx_type": "pumpfunbuy",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.7958993477166823e-8,\"raw_data\":\"TYPE: Buy\\nMINT: ANQZTZSg2i54fUH9MZPVnHCcns3qJ2gW6JVuGyvpump\\nTOKEN AMOUNT: 3505133191168\\nSOL COST: 0.1 SOL\\nTIME: 2025-05-22T17:13:48.227+08:00\\nSIGNATURE: 5cBe684LrFC81bKJNzxa1PmkKRZSu1YF1amR54bmZHPspDUxTJZPaZFbdft3xbVj4q6fTXkETCUt6gCrznzXa3du\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\n6dPEBkyuPXRukBmNyuKBkUDwsrE7LvdeZyeRERX3JU2Q\\n\\nMINT地址:\\nANQZTZSg2i54fUH9MZPVnHCcns3qJ2gW6JVuGyvpump\\n\\n关联曲线账户:\\nFX2WchmfdeLrr7mwXwYawnJTNASpbpXNDYtdjJvcoJVQ\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: FX2WchmfdeLrr7mwXwYawnJTNASpbpXNDYtdjJvcoJVQ\\n                                            VIRTUAL TOKEN RESERVES: 1073000000000000\\n                                            VIRTUAL SOL RESERVES: 30000000001\\n                                            REAL TOKEN RESERVES: 793100000000000\\n                                            REAL SOL RESERVES: 1\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:13:47.905+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1073000000000000\\n虚拟SOL储备: 30000000001\\n\\n价格信息:\\n当前价格: 0.000000027958993477166823 SOL\",\"signature\":\"5cBe684LrFC81bKJNzxa1PmkKRZSu1YF1amR54bmZHPspDUxTJZPaZFbdft3xbVj4q6fTXkETCUt6gCrznzXa3du\",\"sol_value\":0.1,\"tokenInfo\":{\"decimals\":6,\"mint\":\"ANQZTZSg2i54fUH9MZPVnHCcns3qJ2gW6JVuGyvpump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"5cBe684LrFC81bKJNzxa1PmkKRZSu1YF1amR54bmZHPspDUxTJZPaZFbdft3xbVj4q6fTXkETCUt6gCrznzXa3du\"]},\"type\":\"pumpfunbuy\"}",
+                      "expected_price": 2.7958993477166826e-8,
+                      "price": 2.7958993477166826e-8,
+                      "price_slippage": 0,
+                      "signature": "5cBe684LrFC81bKJNzxa1PmkKRZSu1YF1amR54bmZHPspDUxTJZPaZFbdft3xbVj4q6fTXkETCUt6gCrznzXa3du",
+                      "sol_amount": 0.1,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:13:48.232074200+00:00",
+                      "token_address": "ANQZTZSg2i54fUH9MZPVnHCcns3qJ2gW6JVuGyvpump",
+                      "tx_type": "pumpfunbuy",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":3.095923130186135e-8,\"raw_data\":\"TYPE: Sell\\nMINT: 7ytUMSABMPhCJUWnzhDySKsazMJeQ56y5CZf6zT9pump\\nTOKEN AMOUNT: 3505133191168\\nMIN SOL OUTPUT: 0.010851624 SOL\\nTIME: 2025-05-22T17:13:40.213+08:00\\nSIGNATURE: 52RUkR8eCnzLxdbgRt5YQ7FLC1gkXHeZMZ7jDe2UqUirMqwV4YDR9Zgd5dQot2DpKSX3TyaFrfGXvFmptiwAnRCF\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\n3rYL1Uvuzz9fw2kTkwJNUpMcuqhc3kkpTfgQopZ9H7kJ\\n\\n关联曲线账户:\\n2shZDh3zKVbn4DfBdFjD64LWthGLdrVWnHwijs8zLWnF\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: 2shZDh3zKVbn4DfBdFjD64LWthGLdrVWnHwijs8zLWnF\\n                                            VIRTUAL TOKEN RESERVES: 1019683528385991\\n                                            VIRTUAL SOL RESERVES: 31568618210\\n                                            REAL TOKEN RESERVES: 739783528385991\\n                                            REAL SOL RESERVES: 1568618210\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:13:39.147+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1019683528385991\\n虚拟SOL储备: 31568618210\\n\\n价格信息:\\n当前价格: 0.00000003095923130186135 SOL\",\"signature\":\"52RUkR8eCnzLxdbgRt5YQ7FLC1gkXHeZMZ7jDe2UqUirMqwV4YDR9Zgd5dQot2DpKSX3TyaFrfGXvFmptiwAnRCF\",\"sol_value\":0.010851624,\"tokenInfo\":{\"decimals\":6,\"mint\":\"7ytUMSABMPhCJUWnzhDySKsazMJeQ56y5CZf6zT9pump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"52RUkR8eCnzLxdbgRt5YQ7FLC1gkXHeZMZ7jDe2UqUirMqwV4YDR9Zgd5dQot2DpKSX3TyaFrfGXvFmptiwAnRCF\"]},\"type\":\"pumpfunsell\"}",
+                      "expected_price": 3.095923130186135e-8,
+                      "price": 3.095923130186135e-8,
+                      "price_slippage": 0,
+                      "signature": "52RUkR8eCnzLxdbgRt5YQ7FLC1gkXHeZMZ7jDe2UqUirMqwV4YDR9Zgd5dQot2DpKSX3TyaFrfGXvFmptiwAnRCF",
+                      "sol_amount": 0.010851624,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:13:40.218565800+00:00",
+                      "token_address": "7ytUMSABMPhCJUWnzhDySKsazMJeQ56y5CZf6zT9pump",
+                      "tx_type": "pumpfunsell",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.8142557870153814e-8,\"raw_data\":\"TYPE: Buy\\nMINT: 7ytUMSABMPhCJUWnzhDySKsazMJeQ56y5CZf6zT9pump\\nTOKEN AMOUNT: 3505133191168\\nSOL COST: 0.1 SOL\\nTIME: 2025-05-22T17:13:39.017+08:00\\nSIGNATURE: 3xgFjauz6Z4Cf6bpt3Wgjh5r2N4rwaFTg4DSi7W4xuQ1Am1ZcWS6arXit6hzBSZT7vSi3DbW6XnHS2YZu5oU3xGm\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\n3rYL1Uvuzz9fw2kTkwJNUpMcuqhc3kkpTfgQopZ9H7kJ\\n\\nMINT地址:\\n7ytUMSABMPhCJUWnzhDySKsazMJeQ56y5CZf6zT9pump\\n\\n关联曲线账户:\\n2shZDh3zKVbn4DfBdFjD64LWthGLdrVWnHwijs8zLWnF\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: 2shZDh3zKVbn4DfBdFjD64LWthGLdrVWnHwijs8zLWnF\\n                                            VIRTUAL TOKEN RESERVES: 1069494866808832\\n                                            VIRTUAL SOL RESERVES: 30098321181\\n                                            REAL TOKEN RESERVES: 789594866808832\\n                                            REAL SOL RESERVES: 98321181\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:13:38.910+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1069494866808832\\n虚拟SOL储备: 30098321181\\n\\n价格信息:\\n当前价格: 0.000000028142557870153814 SOL\",\"signature\":\"3xgFjauz6Z4Cf6bpt3Wgjh5r2N4rwaFTg4DSi7W4xuQ1Am1ZcWS6arXit6hzBSZT7vSi3DbW6XnHS2YZu5oU3xGm\",\"sol_value\":0.1,\"tokenInfo\":{\"decimals\":6,\"mint\":\"7ytUMSABMPhCJUWnzhDySKsazMJeQ56y5CZf6zT9pump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"3xgFjauz6Z4Cf6bpt3Wgjh5r2N4rwaFTg4DSi7W4xuQ1Am1ZcWS6arXit6hzBSZT7vSi3DbW6XnHS2YZu5oU3xGm\"]},\"type\":\"pumpfunbuy\"}",
+                      "expected_price": 2.8142557870153817e-8,
+                      "price": 2.8142557870153817e-8,
+                      "price_slippage": 0,
+                      "signature": "3xgFjauz6Z4Cf6bpt3Wgjh5r2N4rwaFTg4DSi7W4xuQ1Am1ZcWS6arXit6hzBSZT7vSi3DbW6XnHS2YZu5oU3xGm",
+                      "sol_amount": 0.1,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:13:39.022291800+00:00",
+                      "token_address": "7ytUMSABMPhCJUWnzhDySKsazMJeQ56y5CZf6zT9pump",
+                      "tx_type": "pumpfunbuy",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.904877002962244e-8,\"raw_data\":\"TYPE: Sell\\nMINT: 3BCNwt946bemTd6vhzAcGD74s4HK2XjbYSokXjSCpump\\nTOKEN AMOUNT: 3505133191168\\nMIN SOL OUTPUT: 0.010250128 SOL\\nTIME: 2025-05-22T17:11:24.391+08:00\\nSIGNATURE: 2xKbSqGCVdgotMfirfs7ZMGNBnzBkvtsXfQG87VCiJ1F3pxRWdSwS6kHoTqhtp5rbQEdGuyr3DJXQSHKkGkbCfb3\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nHVjPfqzn6R2XkjuxEgVpfCpipwK5bFbqM5TJUvAzKRZL\\n\\n关联曲线账户:\\nB9BZEPkgAu45y9wKdx6x1CMBS8usKSokPwRqkeY77kex\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: B9BZEPkgAu45y9wKdx6x1CMBS8usKSokPwRqkeY77kex\\n                                            VIRTUAL TOKEN RESERVES: 1052680587467801\\n                                            VIRTUAL SOL RESERVES: 30579076300\\n                                            REAL TOKEN RESERVES: 772780587467801\\n                                            REAL SOL RESERVES: 579076300\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:11:24.354+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1052680587467801\\n虚拟SOL储备: 30579076300\\n\\n价格信息:\\n当前价格: 0.00000002904877002962244 SOL\",\"signature\":\"2xKbSqGCVdgotMfirfs7ZMGNBnzBkvtsXfQG87VCiJ1F3pxRWdSwS6kHoTqhtp5rbQEdGuyr3DJXQSHKkGkbCfb3\",\"sol_value\":0.010250128,\"tokenInfo\":{\"decimals\":6,\"mint\":\"3BCNwt946bemTd6vhzAcGD74s4HK2XjbYSokXjSCpump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"2xKbSqGCVdgotMfirfs7ZMGNBnzBkvtsXfQG87VCiJ1F3pxRWdSwS6kHoTqhtp5rbQEdGuyr3DJXQSHKkGkbCfb3\"]},\"type\":\"pumpfunsell\"}",
+                      "expected_price": 2.9048770029622443e-8,
+                      "price": 2.9048770029622443e-8,
+                      "price_slippage": 0,
+                      "signature": "2xKbSqGCVdgotMfirfs7ZMGNBnzBkvtsXfQG87VCiJ1F3pxRWdSwS6kHoTqhtp5rbQEdGuyr3DJXQSHKkGkbCfb3",
+                      "sol_amount": 0.010250128,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:11:24.397207900+00:00",
+                      "token_address": "3BCNwt946bemTd6vhzAcGD74s4HK2XjbYSokXjSCpump",
+                      "tx_type": "pumpfunsell",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    },
+                    {
+                      "amount": 3505133191168,
+                      "build_data": "{\"accounts\":[{\"pubkey\":\"14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\",\"signer\":true}],\"amount\":3505133191168,\"price\":2.8142557869218792e-8,\"raw_data\":\"TYPE: Buy\\nMINT: xiN2qTWMzRKieDCv5gCbrx8Po4S7rczqjSr2G5qpump\\nTOKEN AMOUNT: 3505133191168\\nSOL COST: 0.1 SOL\\nTIME: 2025-05-22T17:08:42.168+08:00\\nSIGNATURE: 4G8eJmyuixovJFGRgoqYECBF5g79bG5kwhQMUNoy15eANMGrxoU2UvH9rS1upw79Qjoeo8xtKH2VWG8gD4CCm4Qt\\n签名者地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN\\n\\n创作者金库地址:\\nHszfkcpWuqFUR2eXfBttro5FhR9wxUVdX5ECSypmgPGv\\n\\nMINT地址:\\nxiN2qTWMzRKieDCv5gCbrx8Po4S7rczqjSr2G5qpump\\n\\n关联曲线账户:\\n8m1f7mM78REH9n41VyJDp8iJsGQUGembbNQJq3kdPbgn\\n\\n绑定曲线账户数据:\\n\\n                                            ACCOUNT TYPE: BondingCurve\\n                                            PUBKEY: 8m1f7mM78REH9n41VyJDp8iJsGQUGembbNQJq3kdPbgn\\n                                            VIRTUAL TOKEN RESERVES: 1069494866808832\\n                                            VIRTUAL SOL RESERVES: 30098321180\\n                                            REAL TOKEN RESERVES: 789594866808832\\n                                            REAL SOL RESERVES: 98321180\\n                                            TOKEN TOTAL SUPPLY: 1000000000000000\\n                                            COMPLETE: false\\n                                            CREATOR: 未知\\nTIME: 2025-05-22T17:08:41.908+08:00\\n\\n\\n虚拟储备信息:\\n虚拟代币储备: 1069494866808832\\n虚拟SOL储备: 30098321180\\n\\n价格信息:\\n当前价格: 0.000000028142557869218792 SOL\",\"signature\":\"4G8eJmyuixovJFGRgoqYECBF5g79bG5kwhQMUNoy15eANMGrxoU2UvH9rS1upw79Qjoeo8xtKH2VWG8gD4CCm4Qt\",\"sol_value\":0.1,\"tokenInfo\":{\"decimals\":6,\"mint\":\"xiN2qTWMzRKieDCv5gCbrx8Po4S7rczqjSr2G5qpump\",\"name\":null,\"symbol\":null},\"transaction\":{\"signatures\":[\"4G8eJmyuixovJFGRgoqYECBF5g79bG5kwhQMUNoy15eANMGrxoU2UvH9rS1upw79Qjoeo8xtKH2VWG8gD4CCm4Qt\"]},\"type\":\"pumpfunbuy\"}",
+                      "expected_price": 2.8142557869218792e-8,
+                      "price": 2.8142557869218792e-8,
+                      "price_slippage": 0,
+                      "signature": "4G8eJmyuixovJFGRgoqYECBF5g79bG5kwhQMUNoy15eANMGrxoU2UvH9rS1upw79Qjoeo8xtKH2VWG8gD4CCm4Qt",
+                      "sol_amount": 0.1,
+                      "status": "confirmed",
+                      "timestamp": "2025-05-22T09:08:42.175479500+00:00",
+                      "token_address": "xiN2qTWMzRKieDCv5gCbrx8Po4S7rczqjSr2G5qpump",
+                      "tx_type": "pumpfunbuy",
+                      "wallet_address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN"
+                    }
+                  ],
+                  "limit": 20,
+                  "offset": 0,
+                  "success": true,
+                  "total": 47
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/monitor-addresses/update": {
+      "put": {
+        "summary": "更新钱包配置支持单独更新设置",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string"
+                  },
+                  "is_active": {
+                    "type": "boolean"
+                  },
+                  "follow_percentage": {
+                    "type": "integer"
+                  },
+                  "slippage_percentage": {
+                    "type": "integer"
+                  },
+                  "tip_percentage": {
+                    "type": "integer"
+                  },
+                  "min_price_multiplier": {
+                    "type": "number"
+                  },
+                  "max_price_multiplier": {
+                    "type": "number"
+                  },
+                  "priority_fee": {
+                    "type": "integer"
+                  },
+                  "compute_unit_limit": {
+                    "type": "integer"
+                  },
+                  "sol_amount_min": {
+                    "type": "number"
+                  },
+                  "sol_amount_max": {
+                    "type": "integer"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "address",
+                  "is_active",
+                  "follow_percentage",
+                  "slippage_percentage",
+                  "tip_percentage",
+                  "min_price_multiplier",
+                  "max_price_multiplier",
+                  "priority_fee",
+                  "compute_unit_limit",
+                  "sol_amount_min",
+                  "sol_amount_max",
+                  "note"
+                ]
+              },
+              "example": {
+                "address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN",
+                "is_active": true,
+                "follow_percentage": 50,
+                "slippage_percentage": 5,
+                "tip_percentage": 2,
+                "min_price_multiplier": 5e-8,
+                "max_price_multiplier": 0.0015,
+                "priority_fee": 60000,
+                "compute_unit_limit": 180000,
+                "sol_amount_min": 0.05,
+                "sol_amount_max": 2,
+                "note": "重要钱包，调整配置"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "message": "成功更新监控地址: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN",
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/transactions/clear": {
+      "delete": {
+        "summary": "清除所有历史交易记录",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "message": "所有交易历史记录已清除",
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/wallet_balance": {
+      "get": {
+        "summary": "获取钱包所有代币余额",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "last_updated": {
+                          "type": "string"
+                        },
+                        "sol_balance": {
+                          "type": "number"
+                        },
+                        "tokens": {
+                          "type": "object",
+                          "properties": {
+                            "3tefHqXRTWhb7BivSKQcB5sX6fmTu42VRZFNMPb1pump": {
+                              "type": "object",
+                              "properties": {
+                                "balance": {
+                                  "type": "integer"
+                                },
+                                "decimals": {
+                                  "type": "integer"
+                                },
+                                "mint": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "balance",
+                                "decimals",
+                                "mint"
+                              ]
+                            },
+                            "EpT71ksnZUtTh7ucK5UhQArDkSGq2Er6d5Na2ouVpump": {
+                              "type": "object",
+                              "properties": {
+                                "balance": {
+                                  "type": "integer"
+                                },
+                                "decimals": {
+                                  "type": "integer"
+                                },
+                                "mint": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "balance",
+                                "decimals",
+                                "mint"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "3tefHqXRTWhb7BivSKQcB5sX6fmTu42VRZFNMPb1pump",
+                            "EpT71ksnZUtTh7ucK5UhQArDkSGq2Er6d5Na2ouVpump"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "last_updated",
+                        "sol_balance",
+                        "tokens"
+                      ]
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "data": {
+                    "last_updated": "2025-05-22T09:45:10+00:00",
+                    "sol_balance": 0.000895604,
+                    "tokens": {
+                      "3tefHqXRTWhb7BivSKQcB5sX6fmTu42VRZFNMPb1pump": {
+                        "balance": 213332800000,
+                        "decimals": 6,
+                        "mint": "3tefHqXRTWhb7BivSKQcB5sX6fmTu42VRZFNMPb1pump"
+                      },
+                      "EpT71ksnZUtTh7ucK5UhQArDkSGq2Er6d5Na2ouVpump": {
+                        "balance": 213332800000,
+                        "decimals": 6,
+                        "mint": "EpT71ksnZUtTh7ucK5UhQArDkSGq2Er6d5Na2ouVpump"
+                      }
+                    }
+                  },
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/special-wallets": {
+      "get": {
+        "summary": "获取专用钱包配置列表",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "wallets": {
+                          "type": "object",
+                          "properties": {
+                            "5b9bxdatmP8uzKhcFb2yabJqhqMynFx9S2VsJRJ6EyvW": {
+                              "type": "object",
+                              "properties": {
+                                "compute_limit": {
+                                  "type": "integer"
+                                },
+                                "note": {
+                                  "type": "string"
+                                },
+                                "priority_fee_multiplier": {
+                                  "type": "integer"
+                                },
+                                "slippage_percentage": {
+                                  "type": "integer"
+                                },
+                                "tip_percentage": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "compute_limit",
+                                "note",
+                                "priority_fee_multiplier",
+                                "slippage_percentage",
+                                "tip_percentage"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "5b9bxdatmP8uzKhcFb2yabJqhqMynFx9S2VsJRJ6EyvW"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "wallets"
+                      ]
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "data": {
+                    "wallets": {
+                      "5b9bxdatmP8uzKhcFb2yabJqhqMynFx9S2VsJRJ6EyvW": {
+                        "compute_limit": 70000,
+                        "note": "专用钱包",
+                        "priority_fee_multiplier": 6,
+                        "slippage_percentage": 20,
+                        "tip_percentage": 2
+                      }
+                    }
+                  },
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "添加专用钱包配置",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wallet_address": {
+                    "type": "string"
+                  },
+                  "slippage_percentage": {
+                    "type": "number"
+                  },
+                  "tip_percentage": {
+                    "type": "number"
+                  },
+                  "priority_fee_multiplier": {
+                    "type": "integer"
+                  },
+                  "compute_limit": {
+                    "type": "integer"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "wallet_address",
+                  "slippage_percentage",
+                  "tip_percentage",
+                  "priority_fee_multiplier",
+                  "compute_limit",
+                  "note"
+                ]
+              },
+              "example": {
+                "wallet_address": "5b9bxdatmP8uzKhcFb2yabJqhqMynFx9S2VsJRJ6EyvW",
+                "slippage_percentage": 1.5,
+                "tip_percentage": 0.8,
+                "priority_fee_multiplier": 5,
+                "compute_limit": 70000,
+                "note": "重要交易钱包"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "message": "特殊钱包配置已添加",
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/special-wallets/5b9bxdatmP8uzKhcFb2yabJqhqMynFx9S2VsJRJ6EyvW": {
+      "delete": {
+        "summary": "删除专用指定钱包配置",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "message": "特殊钱包配置已删除",
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/special-wallets/update": {
+      "put": {
+        "summary": "更新专用钱包配置",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wallet_address": {
+                    "type": "string"
+                  },
+                  "slippage_percentage": {
+                    "type": "number"
+                  },
+                  "tip_percentage": {
+                    "type": "number"
+                  },
+                  "priority_fee_multiplier": {
+                    "type": "integer"
+                  },
+                  "compute_limit": {
+                    "type": "integer"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "wallet_address",
+                  "slippage_percentage",
+                  "tip_percentage",
+                  "priority_fee_multiplier",
+                  "compute_limit",
+                  "note"
+                ]
+              },
+              "example": {
+                "wallet_address": "5b9bxdatmP8uzKhcFb2yabJqhqMynFx9S2VsJRJ6EyvW",
+                "slippage_percentage": 1.5,
+                "tip_percentage": 0.8,
+                "priority_fee_multiplier": 5,
+                "compute_limit": 70000,
+                "note": "重要交易钱包"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "message": "专用钱包配置已更新",
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/monitor-addresses/update-note": {
+      "post": {
+        "summary": "更新监控配置地址备注",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "address",
+                  "note"
+                ]
+              },
+              "example": {
+                "address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN",
+                "note": "14U重要钱包，关注高价值交易"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "message": "成功更新钱包备注: 14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN",
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/profit/analyze": {
+      "get": {
+        "summary": "指定钱包指定token地址盈利记录统计",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "wallet_address",
+            "in": "query",
+            "description": "",
+            "required": true,
+            "example": "钱包地址",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token_address",
+            "in": "query",
+            "description": "",
+            "required": true,
+            "example": "代币地址",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "",
+            "required": true,
+            "example": "2025-01-01",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "",
+            "required": true,
+            "example": "2023-12-31",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_unrealized",
+            "in": "query",
+            "description": "",
+            "required": true,
+            "example": "true",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/monitor-addresses/add": {
+      "post": {
+        "summary": "添加监控地址",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string"
+                  },
+                  "follow_percentage": {
+                    "type": "integer"
+                  },
+                  "slippage_percentage": {
+                    "type": "integer"
+                  },
+                  "tip_percentage": {
+                    "type": "integer"
+                  },
+                  "min_price_multiplier": {
+                    "type": "number"
+                  },
+                  "max_price_multiplier": {
+                    "type": "number"
+                  },
+                  "priority_fee": {
+                    "type": "integer"
+                  },
+                  "compute_unit_limit": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "address",
+                  "follow_percentage",
+                  "slippage_percentage",
+                  "tip_percentage",
+                  "min_price_multiplier",
+                  "max_price_multiplier",
+                  "priority_fee",
+                  "compute_unit_limit"
+                ]
+              },
+              "example": {
+                "address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN",
+                "follow_percentage": 30,
+                "slippage_percentage": 2,
+                "tip_percentage": 1,
+                "min_price_multiplier": 0.8,
+                "max_price_multiplier": 1.2,
+                "priority_fee": 50000,
+                "compute_unit_limit": 200000
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "address": {
+                          "type": "string"
+                        },
+                        "compute_unit_limit": {
+                          "type": "integer"
+                        },
+                        "follow_percentage": {
+                          "type": "integer"
+                        },
+                        "max_price_multiplier": {
+                          "type": "number"
+                        },
+                        "min_price_multiplier": {
+                          "type": "number"
+                        },
+                        "priority_fee": {
+                          "type": "integer"
+                        },
+                        "slippage_percentage": {
+                          "type": "integer"
+                        },
+                        "sol_amount_max": {
+                          "type": "null"
+                        },
+                        "sol_amount_min": {
+                          "type": "null"
+                        },
+                        "stop_loss_percentage": {
+                          "type": "integer"
+                        },
+                        "take_profit_percentage": {
+                          "type": "integer"
+                        },
+                        "tip_percentage": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "address",
+                        "compute_unit_limit",
+                        "follow_percentage",
+                        "max_price_multiplier",
+                        "min_price_multiplier",
+                        "priority_fee",
+                        "slippage_percentage",
+                        "sol_amount_max",
+                        "sol_amount_min",
+                        "stop_loss_percentage",
+                        "take_profit_percentage",
+                        "tip_percentage"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "message",
+                    "success"
+                  ]
+                },
+                "example": {
+                  "data": {
+                    "address": "14UvX6hczd5m76XQyzMs9FxDy8xuwB2NTUC53tdvi5uN",
+                    "compute_unit_limit": 200000,
+                    "follow_percentage": 30,
+                    "max_price_multiplier": 1.2,
+                    "min_price_multiplier": 0.8,
+                    "priority_fee": 50000,
+                    "slippage_percentage": 2,
+                    "sol_amount_max": null,
+                    "sol_amount_min": null,
+                    "stop_loss_percentage": 5,
+                    "take_profit_percentage": 10,
+                    "tip_percentage": 1
+                  },
+                  "message": "监控地址添加成功",
+                  "success": true
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "securitySchemes": {}
+  },
+  "servers": [],
+  "security": []
+}

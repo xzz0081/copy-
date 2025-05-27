@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import MonitorAddresses from './pages/MonitorAddresses';
 import ManualSell from './pages/ManualSell';
 import SystemHealth from './pages/SystemHealth';
+import SpecialWallets from './pages/SpecialWallets';
 import { useEffect } from 'react';
 import { connectWebSocket, initializeWebSocketService } from './services/websocket';
 
@@ -38,6 +39,7 @@ function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<MonitorAddresses />} />
         <Route path="manual-sell" element={<ManualSell />} />
+        <Route path="special-wallets" element={<SpecialWallets />} />
         <Route path="system-health" element={<SystemHealth />} />
       </Route>
     </Routes>

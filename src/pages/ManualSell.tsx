@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowDown, SendHorizonal } from 'lucide-react';
+import { SendHorizonal } from 'lucide-react';
 import { sellToken } from '../services/api';
 import { SellRequest, SellResponse } from '../types';
 import Spinner from '../components/ui/Spinner';
@@ -10,23 +10,17 @@ export default function ManualSell() {
   const [formData, setFormData] = useState<SellRequest>({
     token_address: '',
     percentage: 25,
-    tip_fixed: 0.00015525,
-    slippage_bps: 500,
-    priority_fee: 20000,
-    follow_system_defaults: true,
   });
   
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SellResponse | null>(null);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
     
-    let parsedValue: string | number | boolean = value;
+    let parsedValue: string | number = value;
     if (type === 'number') {
       parsedValue = parseFloat(value);
-    } else if (type === 'checkbox') {
-      parsedValue = checked;
     }
     
     setFormData((prev) => ({
@@ -61,14 +55,6 @@ export default function ManualSell() {
     }
   };
   
-  const handleUseDefaults = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      follow_system_defaults: checked,
-    }));
-  };
-  
   // Format the form data as JSON for display
   const formDataJson = JSON.stringify(formData, null, 2);
   
@@ -79,6 +65,7 @@ export default function ManualSell() {
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="card">
           <h2 className="mb-4 text-xl font-semibold">卖出表单</h2>
+          <p className="mb-4 text-sm text-gray-400">使用专用钱包配置进行卖出，只需提供代币地址和卖出比例</p>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -118,72 +105,6 @@ export default function ManualSell() {
                 <span>75%</span>
                 <span>100%</span>
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="tip_fixed" className="block text-sm font-medium">
-                小费 (SOL)
-              </label>
-              <input
-                type="number"
-                id="tip_fixed"
-                name="tip_fixed"
-                value={formData.tip_fixed}
-                onChange={handleChange}
-                step="0.00000001"
-                min="0"
-                className="input"
-                disabled={formData.follow_system_defaults}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="slippage_bps" className="block text-sm font-medium">
-                滑点 (BPS)
-              </label>
-              <input
-                type="number"
-                id="slippage_bps"
-                name="slippage_bps"
-                value={formData.slippage_bps}
-                onChange={handleChange}
-                min="1"
-                className="input"
-                disabled={formData.follow_system_defaults}
-              />
-              <p className="text-xs text-gray-400">
-                100 BPS = 1%, 当前设置: {formData.slippage_bps / 100}%
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="priority_fee" className="block text-sm font-medium">
-                优先费
-              </label>
-              <input
-                type="number"
-                id="priority_fee"
-                name="priority_fee"
-                value={formData.priority_fee}
-                onChange={handleChange}
-                min="0"
-                className="input"
-                disabled={formData.follow_system_defaults}
-              />
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="follow_system_defaults"
-                name="follow_system_defaults"
-                checked={formData.follow_system_defaults}
-                onChange={handleUseDefaults}
-                className="h-4 w-4 rounded border-gray-700 bg-gray-700 text-primary-600 focus:ring-primary-500"
-              />
-              <label htmlFor="follow_system_defaults" className="text-sm font-medium">
-                使用系统默认设置
-              </label>
             </div>
             
             <button
@@ -263,14 +184,14 @@ export default function ManualSell() {
                     
                     {result.signatures.length > 0 && (
                       <div className="space-y-2">
-                        <h3 className="text-sm font-medium">签名:</h3>
-                        <div className="overflow-auto rounded bg-gray-800 p-2 text-xs font-mono">
+                        <h3 className="text-sm font-medium">交易签名:</h3>
+                        <ul className="space-y-1">
                           {result.signatures.map((sig, index) => (
-                            <div key={index} className="break-all py-1">
+                            <li key={index} className="overflow-hidden text-ellipsis text-xs font-mono">
                               {sig}
-                            </div>
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                       </div>
                     )}
                   </>

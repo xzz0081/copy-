@@ -79,10 +79,6 @@ export interface TransactionsResponse {
 export interface SellRequest {
   token_address: string;
   percentage: number;
-  tip_fixed: number;
-  slippage_bps: number;
-  priority_fee: number;
-  follow_system_defaults: boolean;
 }
 
 export interface SellResponse {
@@ -109,4 +105,29 @@ export interface SystemHealthResponse {
   data: any;
   responseTime: number;
   error?: boolean;
+}
+
+// 专用钱包配置类型
+export interface SpecialWalletConfig {
+  compute_limit: number;
+  note: string;
+  priority_fee_multiplier: number;
+  slippage_percentage: number;
+  tip_percentage: number;
+}
+
+export interface SpecialWalletsResponse {
+  data: {
+    wallets: Record<string, SpecialWalletConfig>;
+  };
+  success: boolean;
+}
+
+export interface AddSpecialWalletRequest {
+  wallet_address: string;
+  slippage_percentage: number;
+  tip_percentage: number;
+  priority_fee_multiplier: number;
+  compute_limit: number;
+  note: string;
 }

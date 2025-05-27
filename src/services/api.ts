@@ -202,6 +202,41 @@ export const resumeWallet = async (walletAddress: string) => {
   return response.data;
 };
 
+// 专用钱包配置API
+export const getSpecialWallets = async () => {
+  const response = await api.get('/special-wallets');
+  return response.data;
+};
+
+export const addSpecialWallet = async (data: {
+  wallet_address: string;
+  slippage_percentage: number;
+  tip_percentage: number;
+  priority_fee_multiplier: number;
+  compute_limit: number;
+  note: string;
+}) => {
+  const response = await api.post('/special-wallets', data);
+  return response.data;
+};
+
+export const updateSpecialWallet = async (data: {
+  wallet_address: string;
+  slippage_percentage: number;
+  tip_percentage: number;
+  priority_fee_multiplier: number;
+  compute_limit: number;
+  note: string;
+}) => {
+  const response = await api.put('/special-wallets/update', data);
+  return response.data;
+};
+
+export const deleteSpecialWallet = async (walletAddress: string) => {
+  const response = await api.delete(`/special-wallets/${walletAddress}`);
+  return response.data;
+};
+
 // Transaction API
 export const getTransactions = async (
   walletAddress: string,
@@ -222,10 +257,6 @@ export const getTransactions = async (
 export const sellToken = async (data: {
   token_address: string;
   percentage: number;
-  tip_fixed: number;
-  slippage_bps: number;
-  priority_fee: number;
-  follow_system_defaults: boolean;
 }) => {
   const response = await api.post('/sell', data);
   return response.data;

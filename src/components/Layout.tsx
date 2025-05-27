@@ -7,7 +7,8 @@ import {
   DollarSign, 
   Activity, 
   Menu, 
-  X 
+  X,
+  Wallet
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 
@@ -39,6 +40,10 @@ function NavItem({ to, icon, text }: NavItemProps) {
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-gray-700 bg-background-dark px-4 sm:px-6">
@@ -63,43 +68,48 @@ export default function Layout() {
         {/* Mobile sidebar */}
         <div
           className={cn(
-            'fixed inset-0 z-50 lg:hidden',
-            sidebarOpen ? 'block' : 'hidden'
+            'fixed inset-0 z-40 bg-background-dark/80 backdrop-blur-sm transition-all lg:hidden',
+            sidebarOpen ? 'visible opacity-100' : 'invisible opacity-0'
           )}
+          onClick={toggleSidebar}
         >
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-          <nav className="absolute bottom-0 left-0 top-0 w-64 bg-background-dark p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <LineChart className="h-6 w-6 text-primary-500" />
-                <span className="text-xl font-bold">跟单系统</span>
-              </div>
+          <aside
+            className={cn(
+              'fixed inset-y-0 left-0 z-50 w-72 transform bg-background-dark p-4 shadow-xl transition-transform',
+              sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-6 flex items-center justify-between">
+              <h1 className="text-lg font-bold">Bolt跟单系统</h1>
               <button
-                type="button"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-400 hover:text-gray-300"
-                onClick={() => setSidebarOpen(false)}
+                onClick={toggleSidebar}
+                className="rounded-md p-2 hover:bg-gray-700"
               >
-                <span className="sr-only">Close sidebar</span>
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="mt-8 flex flex-col gap-2">
+
+            <nav className="space-y-2">
               <NavItem to="/" icon={<BarChart3 className="h-5 w-5" />} text="监控地址" />
               <NavItem to="/manual-sell" icon={<DollarSign className="h-5 w-5" />} text="手动卖出" />
+              <NavItem to="/special-wallets" icon={<Wallet className="h-5 w-5" />} text="专用钱包" />
               <NavItem to="/system-health" icon={<Activity className="h-5 w-5" />} text="系统健康" />
-            </div>
-          </nav>
+            </nav>
+          </aside>
         </div>
 
         {/* Desktop sidebar */}
-        <nav className="hidden w-64 border-r border-gray-700 bg-background-dark p-4 lg:block">
+        <div className="hidden w-64 flex-shrink-0 border-r border-gray-700 bg-background-dark p-4 lg:block">
           <div className="flex flex-col gap-2">
             <NavItem to="/" icon={<BarChart3 className="h-5 w-5" />} text="监控地址" />
             <NavItem to="/manual-sell" icon={<DollarSign className="h-5 w-5" />} text="手动卖出" />
+            <NavItem to="/special-wallets" icon={<Wallet className="h-5 w-5" />} text="专用钱包" />
             <NavItem to="/system-health" icon={<Activity className="h-5 w-5" />} text="系统健康" />
           </div>
-        </nav>
+        </div>
 
+        {/* Main content */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
