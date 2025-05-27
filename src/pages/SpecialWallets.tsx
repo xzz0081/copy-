@@ -300,7 +300,7 @@ export default function SpecialWallets() {
               
               <div className="space-y-2">
                 <label htmlFor="priority_fee_multiplier" className="block text-sm font-medium">
-                  优先费乘数
+                  优先费乘数 <span className="text-xs text-gray-400">(最高支持200倍)</span>
                 </label>
                 <input
                   type="number"
@@ -309,6 +309,7 @@ export default function SpecialWallets() {
                   value={newWallet.priority_fee_multiplier}
                   onChange={handleNewWalletChange}
                   min="1"
+                  max="200"
                   className="input"
                 />
               </div>
@@ -426,6 +427,7 @@ export default function SpecialWallets() {
                             value={editValues.priority_fee_multiplier}
                             onChange={handleInputChange}
                             min="1"
+                            max="200"
                             className="input input-sm w-full"
                           />
                         </td>

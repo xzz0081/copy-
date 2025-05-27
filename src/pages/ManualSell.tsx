@@ -19,8 +19,8 @@ export default function ManualSell() {
     const { name, value, type } = e.target;
     
     let parsedValue: string | number = value;
-    if (type === 'number') {
-      parsedValue = parseFloat(value);
+    if (type === 'number' || name === 'percentage') {
+      parsedValue = parseInt(value, 10);
     }
     
     setFormData((prev) => ({
@@ -39,7 +39,12 @@ export default function ManualSell() {
     
     try {
       setLoading(true);
-      const response = await sellToken(formData);
+      const requestData = {
+        ...formData,
+        percentage: Number(formData.percentage)
+      };
+      
+      const response = await sellToken(requestData);
       setResult(response);
       
       if (response.success) {

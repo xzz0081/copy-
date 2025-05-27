@@ -258,7 +258,12 @@ export const sellToken = async (data: {
   token_address: string;
   percentage: number;
 }) => {
-  const response = await api.post('/sell', data);
+  // 确保percentage是数字类型
+  const requestData = {
+    ...data,
+    percentage: Number(data.percentage)
+  };
+  const response = await api.post('/sell', requestData);
   return response.data;
 };
 
