@@ -219,7 +219,7 @@ export default function AddressDetail() {
                 id="min_price_multiplier"
                 name="min_price_multiplier"
                 min="0"
-                step="0.000000001"
+                step="any"
                 value={formData.min_price_multiplier}
                 onChange={handleInputChange}
                 className="input"
@@ -235,7 +235,7 @@ export default function AddressDetail() {
                 id="max_price_multiplier"
                 name="max_price_multiplier"
                 min="0"
-                step="0.000001"
+                step="any"
                 value={formData.max_price_multiplier}
                 onChange={handleInputChange}
                 className="input"

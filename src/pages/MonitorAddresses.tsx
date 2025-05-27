@@ -764,7 +764,7 @@ export default function MonitorAddresses() {
                   value={newWallet.min_price_multiplier}
                   onChange={handleAddWalletChange}
                   min="0"
-                  step="0.01"
+                  step="any"
                   className="input"
                 />
               </div>
@@ -780,7 +780,7 @@ export default function MonitorAddresses() {
                   value={newWallet.max_price_multiplier}
                   onChange={handleAddWalletChange}
                   min="0"
-                  step="0.01"
+                  step="any"
                   className="input"
                 />
               </div>
@@ -974,7 +974,7 @@ export default function MonitorAddresses() {
                           <input
                             type="number"
                             min="0"
-                            step="0.000001"
+                            step="any"
                             value={editValues.min_price_multiplier}
                             onChange={(e) => setEditValues({ ...editValues, min_price_multiplier: parseFloat(e.target.value) })}
                             className="input w-20"
@@ -995,7 +995,7 @@ export default function MonitorAddresses() {
                           <input
                             type="number"
                             min="0"
-                            step="0.000001"
+                            step="any"
                             value={editValues.max_price_multiplier}
                             onChange={(e) => setEditValues({ ...editValues, max_price_multiplier: parseFloat(e.target.value) })}
                             className="input w-20"
