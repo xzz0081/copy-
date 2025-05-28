@@ -11,6 +11,7 @@ import {
   Wallet
 } from 'lucide-react';
 import { cn } from '../utils/cn';
+import RealtimeTradeHistory from './RealtimeTradeHistory';
 
 type NavItemProps = {
   to: string;
@@ -44,6 +45,9 @@ export default function Layout() {
     setSidebarOpen(!sidebarOpen);
   };
 
+  // 创建一个空函数作为onClose参数，因为实时交易记录不需要关闭功能
+  const dummyClose = () => {};
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-gray-700 bg-background-dark px-4 sm:px-6">
@@ -59,7 +63,7 @@ export default function Layout() {
           <LineChart className="h-6 w-6 text-primary-500" />
           <span className="text-xl font-bold">跟单系统</span>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-4">
           <span className="text-sm text-gray-400">v1.0.0</span>
         </div>
       </header>
@@ -95,6 +99,12 @@ export default function Layout() {
               <NavItem to="/manual-sell" icon={<DollarSign className="h-5 w-5" />} text="手动卖出" />
               <NavItem to="/special-wallets" icon={<Wallet className="h-5 w-5" />} text="专用钱包" />
               <NavItem to="/system-health" icon={<Activity className="h-5 w-5" />} text="系统健康" />
+              <div className="mt-4 h-80 overflow-hidden border-t border-gray-700 pt-4">
+                <h3 className="mb-2 px-3 text-sm font-medium">实时交易记录</h3>
+                <div className="h-72 overflow-y-auto">
+                  <RealtimeTradeHistory onClose={dummyClose} />
+                </div>
+              </div>
             </nav>
           </aside>
         </div>
@@ -106,6 +116,12 @@ export default function Layout() {
             <NavItem to="/manual-sell" icon={<DollarSign className="h-5 w-5" />} text="手动卖出" />
             <NavItem to="/special-wallets" icon={<Wallet className="h-5 w-5" />} text="专用钱包" />
             <NavItem to="/system-health" icon={<Activity className="h-5 w-5" />} text="系统健康" />
+            <div className="mt-4 h-80 overflow-hidden border-t border-gray-700 pt-4">
+              <h3 className="mb-2 px-3 text-sm font-medium">实时交易记录</h3>
+              <div className="h-72 overflow-y-auto">
+                <RealtimeTradeHistory onClose={dummyClose} />
+              </div>
+            </div>
           </div>
         </div>
 
