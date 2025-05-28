@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   LineChart, 
   BarChart3, 
@@ -47,6 +47,11 @@ export default function Layout() {
 
   // 创建一个空函数作为onClose参数，因为实时交易记录不需要关闭功能
   const dummyClose = () => {};
+
+  // 使用useMemo创建单个RealtimeTradeHistory实例
+  const tradeHistoryComponent = useMemo(() => {
+    return <RealtimeTradeHistory onClose={dummyClose} />;
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -102,7 +107,8 @@ export default function Layout() {
               <div className="mt-4 h-80 overflow-hidden border-t border-gray-700 pt-4">
                 <h3 className="mb-2 px-3 text-sm font-medium">实时交易记录</h3>
                 <div className="h-72 overflow-y-auto">
-                  <RealtimeTradeHistory onClose={dummyClose} />
+                  {/* 使用同一个组件实例 */}
+                  {sidebarOpen && tradeHistoryComponent}
                 </div>
               </div>
             </nav>
@@ -119,7 +125,8 @@ export default function Layout() {
             <div className="mt-4 h-80 overflow-hidden border-t border-gray-700 pt-4">
               <h3 className="mb-2 px-3 text-sm font-medium">实时交易记录</h3>
               <div className="h-72 overflow-y-auto">
-                <RealtimeTradeHistory onClose={dummyClose} />
+                {/* 使用同一个组件实例 */}
+                {tradeHistoryComponent}
               </div>
             </div>
           </div>
