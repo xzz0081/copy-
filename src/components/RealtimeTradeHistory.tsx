@@ -9,16 +9,25 @@ import Spinner from './ui/Spinner';
 interface TradeData {
   message_type: string;
   params: {
-    min_sol_out: number;
-    min_sol_out_ui: number;
+    // 旧字段名
+    min_sol_out?: number;
+    min_sol_out_ui?: number;
+    token_amount?: number;
+    token_amount_ui?: number;
+    
+    // 新字段名
+    amount_sol?: number;
+    amount_sol_ui?: number;
+    token_amount_in?: number;
+    token_amount_in_ui?: number;
+    
+    // 通用字段
     price: number;
     signature: string;
     signer: string;
-    timestamp: number;
-    token_address: string;
-    token_amount: number;
-    token_amount_ui: number;
-    transaction_type: string;
+    timestamp?: number;
+    token_address?: string;
+    transaction_type?: string;
   };
   timestamp: number;
   trade_id: string;
@@ -390,17 +399,17 @@ const RealtimeTradeHistory: React.FC<RealtimeTradeHistoryProps> = () => {
                   {formatTimestamp(trade.timestamp)}
                 </span>
                 <span className={`font-medium ${
-                  trade.params.transaction_type.toLowerCase().includes('buy') 
+                  (trade.params.transaction_type?.toLowerCase().includes('buy') ?? false)
                     ? 'text-success-500' 
                     : 'text-error-500'
                 }`}>
-                  {getTransactionTypeText(trade.params.transaction_type)}
+                  {getTransactionTypeText(trade.params.transaction_type || '未知')}
                 </span>
               </div>
               
               <div className="mt-1">
                 <AddressDisplay 
-                  address={trade.params.token_address} 
+                  address={trade.params.token_address || '未知地址'} 
                   maxLength={8} 
                   className="text-xs" 
                 />
@@ -409,11 +418,15 @@ const RealtimeTradeHistory: React.FC<RealtimeTradeHistoryProps> = () => {
               <div className="mt-1 grid grid-cols-2 gap-x-1 gap-y-1">
                 <div>
                   <span className="text-gray-400">数量:</span>
-                  <span className="ml-1">{formatNumber(trade.params.token_amount_ui)}</span>
+                  <span className="ml-1">
+                    {formatNumber(trade.params.token_amount_ui || trade.params.token_amount_in_ui || 0)}
+                  </span>
                 </div>
                 <div>
                   <span className="text-gray-400">SOL:</span>
-                  <span className="ml-1">{trade.params.min_sol_out_ui.toFixed(4)}</span>
+                  <span className="ml-1">
+                    {(trade.params.min_sol_out_ui || trade.params.amount_sol_ui || 0).toFixed(4)}
+                  </span>
                 </div>
                 <div className="col-span-2 flex justify-between items-center">
                   <div>
