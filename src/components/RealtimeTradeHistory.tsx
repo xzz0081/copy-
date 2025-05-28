@@ -5,6 +5,12 @@ import AddressDisplay from './ui/AddressDisplay';
 import PriceDisplay from './ui/PriceDisplay';
 import { formatNumber } from '../utils/profit';
 import Spinner from './ui/Spinner';
+import { 
+  WebSocketEvents, 
+  addWebSocketListener, 
+  removeWebSocketListener,
+  getWebSocketStatus
+} from '../services/websocket';
 
 interface TradeData {
   message_type: string;
@@ -30,202 +36,59 @@ interface RealtimeTradeHistoryProps {
 
 const RealtimeTradeHistory: React.FC<RealtimeTradeHistoryProps> = () => {
   const [trades, setTrades] = useState<TradeData[]>([]);
-  const [connected, setConnected] = useState(false);
+  const [connected, setConnected] = useState(getWebSocketStatus());
   const [error, setError] = useState<string | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const heartbeatRef = useRef<number | null>(null);
-  const pingTimeoutRef = useRef<number | null>(null);
-  const reconnectTimeoutRef = useRef<number | null>(null);
-  const reconnectCountRef = useRef<number>(0);
   const maxTrades = 50; // 减少最大显示数量，适合侧边栏
-  const MAX_RECONNECT_ATTEMPTS = 10;
-  const HEARTBEAT_INTERVAL = 15000; // 15秒发送一次心跳
-  const PING_TIMEOUT = 10000; // 10秒内没收到pong就认为连接断开
-
-  // 发送心跳包
-  const sendHeartbeat = () => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log("发送心跳包...");
-      wsRef.current.send(JSON.stringify({ type: "ping" }));
-      
-      // 设置超时定时器，如果在指定时间内未收到pong响应，则重新连接
-      if (pingTimeoutRef.current) {
-        clearTimeout(pingTimeoutRef.current);
-      }
-      
-      pingTimeoutRef.current = window.setTimeout(() => {
-        console.log("心跳包响应超时，重新连接...");
-        if (wsRef.current) {
-          wsRef.current.close();
-        }
-      }, PING_TIMEOUT);
-    }
-  };
-
-  // 启动心跳机制
-  const startHeartbeat = () => {
-    if (heartbeatRef.current) {
-      clearInterval(heartbeatRef.current);
-    }
-    heartbeatRef.current = window.setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
-  };
-
-  // 停止心跳机制
-  const stopHeartbeat = () => {
-    if (heartbeatRef.current) {
-      clearInterval(heartbeatRef.current);
-      heartbeatRef.current = null;
-    }
-    
-    if (pingTimeoutRef.current) {
-      clearTimeout(pingTimeoutRef.current);
-      pingTimeoutRef.current = null;
-    }
-  };
-
+  
+  // 使用全局WebSocket服务
   useEffect(() => {
-    // 初始化WebSocket连接
-    const connect = () => {
+    console.log('初始化交易历史监听...');
+    
+    // 连接状态处理函数
+    const handleConnected = () => {
+      console.log('WebSocket连接成功');
+      setConnected(true);
       setError(null);
+    };
+    
+    const handleDisconnected = () => {
+      console.log('WebSocket连接断开');
+      setConnected(false);
+      setError('连接已断开，正在重连...');
+    };
+    
+    // 处理交易历史消息
+    const handleTradeMessage = (data: any) => {
       try {
-        console.log('尝试连接WebSocket...');
-        const ws = new WebSocket('ws://localhost:8081/trades');
-        wsRef.current = ws;
-
-        ws.onopen = () => {
-          console.log('实时交易WebSocket连接成功');
-          setConnected(true);
-          setError(null);
-          reconnectCountRef.current = 0; // 重置重连计数
-          
-          // 连接成功后立即发送一个ping
-          sendHeartbeat();
-          // 启动心跳
-          startHeartbeat();
-        };
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            
-            // 处理pong响应
-            if (data.type === 'pong') {
-              console.log('收到pong响应');
-              // 清除ping超时
-              if (pingTimeoutRef.current) {
-                clearTimeout(pingTimeoutRef.current);
-                pingTimeoutRef.current = null;
-              }
-              return;
-            }
-            
-            // 只处理交易历史消息
-            if (data.message_type === 'trade_history') {
-              console.log('收到实时交易数据:', data);
-              setTrades(prev => {
-                // 将新交易添加到列表开头
-                const updatedTrades = [data, ...prev];
-                // 限制最大数量
-                return updatedTrades.slice(0, maxTrades);
-              });
-            }
-          } catch (err) {
-            console.error('解析WebSocket消息失败:', err);
-          }
-        };
-
-        ws.onerror = (e) => {
-          console.error('实时交易WebSocket错误:', e);
-          setError('连接出错，正在重连...');
-          setConnected(false);
-          stopHeartbeat();
-          // 自动重连处理放到onclose中
-        };
-
-        ws.onclose = (event) => {
-          console.log('实时交易WebSocket连接关闭, 代码:', event.code);
-          setConnected(false);
-          stopHeartbeat();
-          
-          // 非正常关闭时尝试重连
-          if (event.code !== 1000) {
-            setError('连接已断开，正在重连...');
-            
-            // 清除所有计时器
-            if (reconnectTimeoutRef.current) {
-              clearTimeout(reconnectTimeoutRef.current);
-            }
-            
-            // 使用指数退避重连策略
-            const reconnectDelay = Math.min(1000 * Math.pow(1.5, reconnectCountRef.current), 30000);
-            
-            if (reconnectCountRef.current < MAX_RECONNECT_ATTEMPTS) {
-              console.log(`将在 ${reconnectDelay}ms 后重连 (尝试 ${reconnectCountRef.current + 1}/${MAX_RECONNECT_ATTEMPTS})...`);
-              
-              reconnectTimeoutRef.current = window.setTimeout(() => {
-                reconnectCountRef.current++;
-                if (wsRef.current?.readyState !== WebSocket.OPEN) {
-                  connect();
-                }
-              }, reconnectDelay);
-            } else {
-              // 达到最大重连次数，间隔更长时间后重试
-              console.log('达到最大重连次数，将在60秒后再次尝试');
-              reconnectTimeoutRef.current = window.setTimeout(() => {
-                reconnectCountRef.current = 0;
-                connect();
-              }, 60000);
-            }
-          }
-        };
-        
-        return ws;
-      } catch (error) {
-        console.error('创建WebSocket连接失败:', error);
-        setError('连接失败，重试中...');
-        setConnected(false);
-        
-        // 尝试重连
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
+        // 只处理交易历史消息
+        if (data.message_type === 'trade_history') {
+          console.log('收到实时交易数据:', data);
+          setTrades(prev => {
+            // 将新交易添加到列表开头
+            const updatedTrades = [data, ...prev];
+            // 限制最大数量
+            return updatedTrades.slice(0, maxTrades);
+          });
         }
-        
-        reconnectTimeoutRef.current = window.setTimeout(() => {
-          connect();
-        }, 3000);
-        
-        return null;
+      } catch (err) {
+        console.error('处理交易消息失败:', err);
       }
     };
-
-    const ws = connect();
-
-    // 页面可见性变化监听
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // 如果页面变为可见，但WebSocket已断开，则重连
-        if (wsRef.current?.readyState !== WebSocket.OPEN && wsRef.current?.readyState !== WebSocket.CONNECTING) {
-          connect();
-        }
-      }
-    };
-
-    // 添加页面可见性监听
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // 组件卸载时清理
+    
+    // 添加事件监听
+    addWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
+    addWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
+    addWebSocketListener(WebSocketEvents.MESSAGE, handleTradeMessage);
+    
+    // 设置初始连接状态
+    setConnected(getWebSocketStatus());
+    
+    // 清理函数
     return () => {
-      stopHeartbeat();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
+      console.log('清理交易历史监听...');
+      removeWebSocketListener(WebSocketEvents.CONNECTED, handleConnected);
+      removeWebSocketListener(WebSocketEvents.DISCONNECTED, handleDisconnected);
+      removeWebSocketListener(WebSocketEvents.MESSAGE, handleTradeMessage);
     };
   }, [maxTrades]);
 
