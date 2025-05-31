@@ -348,8 +348,17 @@ export const connectWebSocket = (url: string): void => {
 
   try {
     console.log('正在连接WebSocket...');
-    // 始终使用保存的URL，确保URL不会丢失
-    wsInstance = new WebSocket(savedWsUrl);
+
+    // 如果savedWsUrl以http开头，根据当前页面协议调整为ws或wss
+    let wsUrl = savedWsUrl;
+    if (savedWsUrl.startsWith('http://')) {
+      wsUrl = savedWsUrl.replace('http://', window.location.protocol === 'https:' ? 'wss://' : 'ws://');
+    } else if (savedWsUrl.startsWith('https://')) {
+      wsUrl = savedWsUrl.replace('https://', window.location.protocol === 'https:' ? 'wss://' : 'ws://');
+    }
+    
+    // 创建WebSocket连接
+    wsInstance = new WebSocket(wsUrl);
 
     // 设置连接超时
     const connectionTimeout = window.setTimeout(() => {

@@ -38,7 +38,8 @@ interface RealtimeTradeHistoryProps {
 }
 
 // 交易历史专用WebSocket连接URL
-const TRADES_WS_URL = 'ws://0.0.0.0:8081/trades';
+const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+const TRADES_WS_URL = `${protocol}://${window.location.host}/trades`;
 
 // 全局静态引用，确保即使在StrictMode下也只创建一个WebSocket实例
 const staticWsRef: {
