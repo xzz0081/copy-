@@ -7,9 +7,9 @@ import SpecialWallets from './pages/SpecialWallets';
 import { useEffect } from 'react';
 import { connectWebSocket, initializeWebSocketService } from './services/websocket';
 
-// WebSocket本地服务地址
-// 根据实际运行的WebSocket服务端口进行调整
-const WS_URL = 'ws://0.0.0.0:8081';
+// WebSocket服务地址 - 使用动态协议和主机名
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_URL = `${protocol}//${window.location.host}/ws`;
 
 function App() {
   // 应用启动时初始化WebSocket服务
