@@ -105,12 +105,15 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // 从本地存储中恢复token
+  // 从本地存储中恢复token和状态
   useEffect(() => {
     const token = localStorage.getItem('token');
     const expiresAtStr = localStorage.getItem('expiresAt');
     const expiresAt = expiresAtStr ? parseInt(expiresAtStr, 10) : null;
     const username = localStorage.getItem('username');
+    const tempToken = localStorage.getItem('tempToken');
+    const requiresTotpStr = localStorage.getItem('requiresTotp');
+    const requiresTotp = requiresTotpStr === 'true';
 
     if (token && expiresAt && new Date().getTime() < expiresAt) {
       setAuthToken(token);
@@ -118,14 +121,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         type: 'VERIFY_SUCCESS',
         payload: { token, expiresAt }
       });
-      if (username) {
-        localStorage.setItem('username', username);
-      }
+    } else if (tempToken && requiresTotp && username) {
+      // 如果有临时token和TOTP状态，恢复TOTP验证状态
+      dispatch({
+        type: 'LOGIN_SUCCESS',
+        payload: {
+          tempToken,
+          username,
+          requiresTotp
+        }
+      });
     } else {
-      // Token过期，清除状态
+      // Token过期或没有，清除状态
       localStorage.removeItem('token');
       localStorage.removeItem('expiresAt');
       localStorage.removeItem('username');
+      localStorage.removeItem('tempToken');
+      localStorage.removeItem('requiresTotp');
       setAuthToken(null);
     }
   }, []);
@@ -142,6 +154,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearTimeout(timeoutId);
       
       if (response.success) {
+        // 保存临时token和TOTP状态到本地存储
+        localStorage.setItem('username', credentials.username);
+        localStorage.setItem('tempToken', response.temp_token);
+        localStorage.setItem('requiresTotp', response.requires_totp.toString());
+        
         dispatch({
           type: 'LOGIN_SUCCESS',
           payload: {
@@ -150,7 +167,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             requiresTotp: response.requires_totp
           }
         });
-        localStorage.setItem('username', credentials.username);
       } else {
         dispatch({ type: 'LOGIN_FAILURE', payload: response.message || '登录失败' });
       }
@@ -173,6 +189,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await verifyTotp(data);
       if (response.success) {
+        // 成功验证后，清除临时状态
+        localStorage.removeItem('tempToken');
+        localStorage.removeItem('requiresTotp');
+        
         setAuthToken(response.token);
         localStorage.setItem('token', response.token);
         localStorage.setItem('expiresAt', response.expires_at.toString());
@@ -200,6 +220,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('token');
     localStorage.removeItem('expiresAt');
     localStorage.removeItem('username');
+    localStorage.removeItem('tempToken');
+    localStorage.removeItem('requiresTotp');
     setAuthToken(null);
     dispatch({ type: 'LOGOUT' });
   };

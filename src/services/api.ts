@@ -64,31 +64,57 @@ export const getTotpQrUrl = async (username: string) => {
 
 export const getTotpQrImage = async (username: string) => {
   try {
-    const response = await api.get(`/auth/totp-qr-image/${username}`);
+    const response = await api.get(`/auth/totp-qr-image/${username}`, {
+      timeout: 5000 // 5秒超时
+    });
     
     // 简化的响应处理
+    let result: {
+      success: boolean;
+      message?: string;
+      data?: {
+        qr_image?: string;
+        [key: string]: any;
+      };
+      qr_image?: string;
+    } = { 
+      success: false 
+    };
+    
     if (response.data) {
-      if (response.data.success && response.data.data && response.data.data.qr_image) {
-        // 标准响应格式
-        const qrImage = response.data.data.qr_image;
-        
-        // 只处理非data URI格式的图像
+      // 复制响应对象
+      result = { ...response.data };
+      
+      // 处理标准响应格式
+      if (result.success && result.data && result.data.qr_image) {
+        const qrImage = result.data.qr_image;
         if (typeof qrImage === 'string' && !qrImage.startsWith('data:')) {
-          response.data.data.qr_image = `data:image/svg+xml;base64,${qrImage}`;
+          result.data.qr_image = `data:image/svg+xml;base64,${qrImage}`;
         }
-      } else if (response.data.qr_image) {
-        // 简单响应格式
-        const qrImage = response.data.qr_image;
+      } 
+      // 处理简单响应格式
+      else if (result.qr_image) {
+        const qrImage = result.qr_image;
         if (typeof qrImage === 'string' && !qrImage.startsWith('data:')) {
-          response.data.qr_image = `data:image/svg+xml;base64,${qrImage}`;
+          result.qr_image = `data:image/svg+xml;base64,${qrImage}`;
         }
       }
     }
     
-    return response.data;
+    return result;
   } catch (error) {
-    console.error('获取TOTP二维码失败');
-    throw error;
+    if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      // 超时错误
+      return { 
+        success: false, 
+        message: '获取TOTP二维码超时，请检查网络连接'
+      };
+    }
+    console.error('获取TOTP二维码失败:', error);
+    return {
+      success: false,
+      message: '获取TOTP二维码失败，请稍后重试'
+    };
   }
 };
 
