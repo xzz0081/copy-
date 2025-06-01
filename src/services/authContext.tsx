@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { AuthState, LoginRequest, TotpVerifyRequest } from '../types';
 import { login, verifyTotp, setAuthToken } from './api';
+import { disconnectWebSocket, connectWebSocket } from './websocket';
+
+// WebSocket服务地址 - 使用动态协议和主机名
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_URL = `${protocol}//${window.location.host}/ws`;
 
 // 初始状态
 const initialState: AuthState = {
@@ -204,6 +209,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             expiresAt: response.expires_at
           }
         });
+
+        // 重新连接WebSocket
+        if (WS_URL) {
+          connectWebSocket(WS_URL);
+        }
       } else {
         dispatch({ type: 'VERIFY_FAILURE', payload: response.message || 'TOTP验证失败' });
       }
@@ -217,12 +227,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // 注销函数
   const handleLogout = () => {
+    // 清理本地存储
     localStorage.removeItem('token');
     localStorage.removeItem('expiresAt');
     localStorage.removeItem('username');
     localStorage.removeItem('tempToken');
     localStorage.removeItem('requiresTotp');
+    
+    // 清除Token
     setAuthToken(null);
+    
+    // 断开所有WebSocket连接
+    try {
+      // 断开WebSocket连接
+      console.log('退出登录：断开所有WebSocket连接');
+      disconnectWebSocket();
+    } catch (error) {
+      console.error('断开WebSocket连接失败:', error);
+    }
+    
+    // 更新状态
     dispatch({ type: 'LOGOUT' });
   };
 
