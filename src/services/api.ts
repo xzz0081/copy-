@@ -24,36 +24,76 @@ export const setAuthToken = (token: string | null) => {
 export const login = async (credentials: LoginRequest) => {
   try {
     const response = await api.post('/auth/login', credentials, {
-      timeout: 5000 // 5秒超时
+      timeout: 10000 // 增加到10秒
     });
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
-      // 超时错误
-      return { 
-        success: false, 
-        message: '登录请求超时，请检查网络连接'
-      };
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED') {
+        // 超时错误
+        return { 
+          success: false, 
+          message: '登录请求超时，请检查网络连接'
+        };
+      } else if (!error.response) {
+        // 处理网络连接问题
+        console.error('网络连接错误:', error.message);
+        return { 
+          success: false, 
+          message: '网络连接错误，无法连接到服务器'
+        };
+      } else if (error.response) {
+        // 服务器返回错误
+        return {
+          success: false,
+          message: error.response.data?.message || `服务器错误 (${error.response.status})`
+        };
+      }
     }
-    throw error;
+    // 其他未知错误
+    console.error('登录失败:', error);
+    return {
+      success: false,
+      message: '登录失败，请稍后重试'
+    };
   }
 };
 
 export const verifyTotp = async (data: TotpVerifyRequest) => {
   try {
     const response = await api.post('/auth/verify', data, {
-      timeout: 5000 // 5秒超时
+      timeout: 10000 // 增加到10秒
     });
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
-      // 超时错误
-      return { 
-        success: false, 
-        message: 'TOTP验证请求超时，请检查网络连接'
-      };
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED') {
+        // 超时错误
+        return { 
+          success: false, 
+          message: 'TOTP验证请求超时，请检查网络连接'
+        };
+      } else if (!error.response) {
+        // 处理网络连接问题
+        console.error('网络连接错误:', error.message);
+        return { 
+          success: false, 
+          message: '网络连接错误，无法连接到服务器'
+        };
+      } else if (error.response) {
+        // 服务器返回错误
+        return {
+          success: false,
+          message: error.response.data?.message || `服务器错误 (${error.response.status})`
+        };
+      }
     }
-    throw error;
+    // 其他未知错误
+    console.error('TOTP验证失败:', error);
+    return {
+      success: false,
+      message: '验证失败，请稍后重试'
+    };
   }
 };
 
@@ -65,7 +105,7 @@ export const getTotpQrUrl = async (username: string) => {
 export const getTotpQrImage = async (username: string) => {
   try {
     const response = await api.get(`/auth/totp-qr-image/${username}`, {
-      timeout: 5000 // 5秒超时
+      timeout: 10000 // 增加超时时间
     });
     
     // 简化的响应处理
@@ -103,13 +143,29 @@ export const getTotpQrImage = async (username: string) => {
     
     return result;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
-      // 超时错误
-      return { 
-        success: false, 
-        message: '获取TOTP二维码超时，请检查网络连接'
-      };
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED') {
+        // 超时错误
+        return { 
+          success: false, 
+          message: '获取TOTP二维码超时，请检查网络连接'
+        };
+      } else if (!error.response) {
+        // 处理网络连接问题
+        console.error('网络连接错误:', error.message);
+        return { 
+          success: false, 
+          message: '网络连接错误，无法连接到服务器'
+        };
+      } else if (error.response) {
+        // 服务器返回错误
+        return {
+          success: false,
+          message: error.response.data?.message || `服务器错误 (${error.response.status})`
+        };
+      }
     }
+    // 其他错误
     console.error('获取TOTP二维码失败:', error);
     return {
       success: false,
