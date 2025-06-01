@@ -131,3 +131,39 @@ export interface AddSpecialWalletRequest {
   compute_limit: number;
   note: string;
 }
+
+// 授权相关类型
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  message: string;
+  temp_token: string;
+  requires_totp: boolean;
+}
+
+export interface TotpVerifyRequest {
+  temp_token: string;
+  totp_code: string;
+}
+
+export interface TotpVerifyResponse {
+  success: boolean;
+  message: string;
+  token: string;
+  expires_at: number;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  token: string | null;
+  username: string | null;
+  tempToken: string | null;
+  requiresTotp: boolean;
+  error: string | null;
+  loading: boolean;
+  expiresAt: number | null;
+}

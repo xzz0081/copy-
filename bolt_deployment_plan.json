@@ -1,0 +1,194 @@
+{
+  "project": "bolt-multi-deployment",
+  "description": "多套Bolt程序一键部署配置",
+  "version": "1.0",
+  "author": "系统管理员",
+  "deployments": [
+    {
+      "name": "bolt-stack1",
+      "description": "第一套程序 - 主要环境",
+      "domain": "copybot-main.example.com",
+      "compose_file": "/root/docker/stacks/bolt-stack1/docker-compose.yml",
+      "services": {
+        "frontend": {
+          "image": "bolt-frontend:latest",
+          "host_port": 3535,
+          "container_port": 3535,
+          "restart_policy": "always",
+          "environment": {
+            "API_URL": "http://copybot-service:3000"
+          }
+        },
+        "backend": {
+          "image": "copybot-service:latest",
+          "host_port": 3000,
+          "container_port": 3000,
+          "restart_policy": "always",
+          "environment": {
+            "PORT": 3000,
+            "REDIS_URL": "redis://redis:6379"
+          }
+        },
+        "grpc": {
+          "image": "grpcall-app:latest",
+          "container_port": 8000,
+          "expose_port": false,
+          "restart_policy": "always",
+          "monitor_script": "/root/docker/stacks/bolt-stack1/grpc_monitor.sh",
+          "environment": {
+            "REDIS_URL": "redis://redis:6379"
+          }
+        },
+        "redis": {
+          "image": "redis:7-alpine",
+          "host_port": 6379,
+          "container_port": 6379,
+          "expose_port": false,
+          "restart_policy": "always",
+          "volumes": ["redis-data-1:/data"]
+        }
+      },
+      "network": "bolt-network-1",
+      "volumes": ["redis-data-1"],
+      "nginx_config": {
+        "server_name": "copybot-main.example.com",
+        "frontend_location": "/",
+        "backend_location": "/api/",
+        "ssl_enabled": true
+      }
+    },
+    {
+      "name": "bolt-stack2",
+      "description": "第二套程序 - 测试环境",
+      "domain": "copybot-test.example.com",
+      "compose_file": "/root/docker/stacks/bolt-stack2/docker-compose.yml",
+      "services": {
+        "frontend": {
+          "image": "bolt-frontend:latest",
+          "host_port": 3536,
+          "container_port": 3535,
+          "restart_policy": "always",
+          "environment": {
+            "API_URL": "http://copybot-service:3000"
+          }
+        },
+        "backend": {
+          "image": "copybot-service:latest",
+          "host_port": 3001,
+          "container_port": 3000,
+          "restart_policy": "always",
+          "environment": {
+            "PORT": 3000,
+            "REDIS_URL": "redis://redis:6379"
+          }
+        },
+        "grpc": {
+          "image": "grpcall-app:latest",
+          "container_port": 8000,
+          "expose_port": false,
+          "restart_policy": "always",
+          "monitor_script": "/root/docker/stacks/bolt-stack2/grpc_monitor.sh",
+          "environment": {
+            "REDIS_URL": "redis://redis:6379"
+          }
+        },
+        "redis": {
+          "image": "redis:7-alpine",
+          "host_port": 6380,
+          "container_port": 6379,
+          "expose_port": false,
+          "restart_policy": "always",
+          "volumes": ["redis-data-2:/data"]
+        }
+      },
+      "network": "bolt-network-2",
+      "volumes": ["redis-data-2"],
+      "nginx_config": {
+        "server_name": "copybot-test.example.com",
+        "frontend_location": "/",
+        "backend_location": "/api/",
+        "ssl_enabled": true
+      }
+    },
+    {
+      "name": "bolt-stack3",
+      "description": "第三套程序 - 开发环境",
+      "domain": "copybot-dev.example.com",
+      "compose_file": "/root/docker/stacks/bolt-stack3/docker-compose.yml",
+      "services": {
+        "frontend": {
+          "image": "bolt-frontend:latest",
+          "host_port": 3537,
+          "container_port": 3535,
+          "restart_policy": "always",
+          "environment": {
+            "API_URL": "http://copybot-service:3000"
+          }
+        },
+        "backend": {
+          "image": "copybot-service:latest",
+          "host_port": 3002,
+          "container_port": 3000,
+          "restart_policy": "always",
+          "environment": {
+            "PORT": 3000,
+            "REDIS_URL": "redis://redis:6379"
+          }
+        },
+        "grpc": {
+          "image": "grpcall-app:latest",
+          "container_port": 8000,
+          "expose_port": false,
+          "restart_policy": "always",
+          "monitor_script": "/root/docker/stacks/bolt-stack3/grpc_monitor.sh",
+          "environment": {
+            "REDIS_URL": "redis://redis:6379"
+          }
+        },
+        "redis": {
+          "image": "redis:7-alpine",
+          "host_port": 6381,
+          "container_port": 6379,
+          "expose_port": false,
+          "restart_policy": "always",
+          "volumes": ["redis-data-3:/data"]
+        }
+      },
+      "network": "bolt-network-3",
+      "volumes": ["redis-data-3"],
+      "nginx_config": {
+        "server_name": "copybot-dev.example.com",
+        "frontend_location": "/",
+        "backend_location": "/api/",
+        "ssl_enabled": true
+      }
+    }
+  ],
+  "control_scripts": {
+    "master_script": "/root/docker/bolt-master.sh",
+    "commands": {
+      "start_all": "启动所有环境",
+      "stop_all": "停止所有环境",
+      "restart_all": "重启所有环境",
+      "start_stack": "启动指定环境 (参数: 环境名称)",
+      "stop_stack": "停止指定环境 (参数: 环境名称)",
+      "restart_stack": "重启指定环境 (参数: 环境名称)",
+      "status": "显示所有环境状态"
+    }
+  },
+  "backup_config": {
+    "backup_script": "/root/docker/bolt-backup.sh",
+    "backup_dir": "/root/docker/backups",
+    "schedule": "0 2 * * *",
+    "retention_days": 7
+  },
+  "implementation_steps": [
+    "创建目录结构",
+    "准备Docker Compose配置文件",
+    "设置网络和卷",
+    "配置Nginx反向代理",
+    "创建控制脚本",
+    "设置监控和备份",
+    "启动环境"
+  ]
+} 

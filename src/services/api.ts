@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AddWalletRequest } from '../types';
+import { AddWalletRequest, LoginRequest, TotpVerifyRequest } from '../types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -8,6 +8,89 @@ const api = axios.create({
     'ngrok-skip-browser-warning': '1'
   },
 });
+
+// 设置JWT令牌拦截器
+export const setAuthToken = (token: string | null) => {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    localStorage.setItem('token', token);
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+    localStorage.removeItem('token');
+  }
+};
+
+// 授权相关API
+export const login = async (credentials: LoginRequest) => {
+  try {
+    const response = await api.post('/auth/login', credentials, {
+      timeout: 5000 // 5秒超时
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      // 超时错误
+      return { 
+        success: false, 
+        message: '登录请求超时，请检查网络连接'
+      };
+    }
+    throw error;
+  }
+};
+
+export const verifyTotp = async (data: TotpVerifyRequest) => {
+  try {
+    const response = await api.post('/auth/verify', data, {
+      timeout: 5000 // 5秒超时
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+      // 超时错误
+      return { 
+        success: false, 
+        message: 'TOTP验证请求超时，请检查网络连接'
+      };
+    }
+    throw error;
+  }
+};
+
+export const getTotpQrUrl = async (username: string) => {
+  const response = await api.get(`/auth/totp-qr/${username}`);
+  return response.data;
+};
+
+export const getTotpQrImage = async (username: string) => {
+  try {
+    const response = await api.get(`/auth/totp-qr-image/${username}`);
+    
+    // 简化的响应处理
+    if (response.data) {
+      if (response.data.success && response.data.data && response.data.data.qr_image) {
+        // 标准响应格式
+        const qrImage = response.data.data.qr_image;
+        
+        // 只处理非data URI格式的图像
+        if (typeof qrImage === 'string' && !qrImage.startsWith('data:')) {
+          response.data.data.qr_image = `data:image/svg+xml;base64,${qrImage}`;
+        }
+      } else if (response.data.qr_image) {
+        // 简单响应格式
+        const qrImage = response.data.qr_image;
+        if (typeof qrImage === 'string' && !qrImage.startsWith('data:')) {
+          response.data.qr_image = `data:image/svg+xml;base64,${qrImage}`;
+        }
+      }
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('获取TOTP二维码失败');
+    throw error;
+  }
+};
 
 // 获取SOL价格
 let lastSolPriceData = {

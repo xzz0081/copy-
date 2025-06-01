@@ -8,10 +8,13 @@ import {
   Activity, 
   Menu, 
   X,
-  Wallet
+  Wallet,
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import RealtimeTradeHistory from './RealtimeTradeHistory';
+import { useAuth } from '../services/authContext';
 
 type NavItemProps = {
   to: string;
@@ -40,6 +43,7 @@ function NavItem({ to, icon, text }: NavItemProps) {
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { logout, state } = useAuth();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -52,6 +56,11 @@ export default function Layout() {
   const tradeHistoryComponent = useMemo(() => {
     return <RealtimeTradeHistory onClose={dummyClose} />;
   }, []);
+
+  // 退出登录
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -69,6 +78,14 @@ export default function Layout() {
           <span className="text-xl font-bold">跟单系统</span>
         </div>
         <div className="ml-auto flex items-center gap-4">
+          {state.username && <span className="text-sm text-gray-300">用户: {state.username}</span>}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>退出</span>
+          </button>
           <span className="text-sm text-gray-400">v1.0.0</span>
         </div>
       </header>
@@ -104,6 +121,14 @@ export default function Layout() {
               <NavItem to="/manual-sell" icon={<DollarSign className="h-5 w-5" />} text="手动卖出" />
               <NavItem to="/special-wallets" icon={<Wallet className="h-5 w-5" />} text="专用钱包" />
               <NavItem to="/system-health" icon={<Activity className="h-5 w-5" />} text="系统健康" />
+              <NavItem to="/auth-guide" icon={<ShieldCheck className="h-5 w-5" />} text="授权指南" />
+              <button
+                onClick={handleLogout}
+                className="mt-2 flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+              >
+                <LogOut className="h-5 w-5" />
+                <span>退出登录</span>
+              </button>
               <div className="mt-4 h-80 overflow-hidden border-t border-gray-700 pt-4">
                 <h3 className="mb-2 px-3 text-sm font-medium">实时交易记录</h3>
                 <div className="h-72 overflow-y-auto">
@@ -122,6 +147,14 @@ export default function Layout() {
             <NavItem to="/manual-sell" icon={<DollarSign className="h-5 w-5" />} text="手动卖出" />
             <NavItem to="/special-wallets" icon={<Wallet className="h-5 w-5" />} text="专用钱包" />
             <NavItem to="/system-health" icon={<Activity className="h-5 w-5" />} text="系统健康" />
+            <NavItem to="/auth-guide" icon={<ShieldCheck className="h-5 w-5" />} text="授权指南" />
+            <button
+              onClick={handleLogout}
+              className="mt-2 flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>退出登录</span>
+            </button>
             <div className="mt-4 h-80 overflow-hidden border-t border-gray-700 pt-4">
               <h3 className="mb-2 px-3 text-sm font-medium">实时交易记录</h3>
               <div className="h-72 overflow-y-auto">
