@@ -104,9 +104,12 @@ export const getTotpQrUrl = async (username: string) => {
 
 export const getTotpQrImage = async (username: string) => {
   try {
+    console.log(`请求TOTP二维码: /auth/totp-qr-image/${username}`);
     const response = await api.get(`/auth/totp-qr-image/${username}`, {
       timeout: 10000 // 增加超时时间
     });
+    
+    console.log('收到二维码响应:', response.status, typeof response.data);
     
     // 简化的响应处理
     let result: {
@@ -126,23 +129,58 @@ export const getTotpQrImage = async (username: string) => {
       result = { ...response.data };
       
       // 处理标准响应格式
-      if (result.success && result.data && result.data.qr_image) {
+      if (result.success && result.data && typeof result.data.qr_image === 'string') {
+        console.log('处理标准响应格式二维码');
         const qrImage = result.data.qr_image;
-        if (typeof qrImage === 'string' && !qrImage.startsWith('data:')) {
-          result.data.qr_image = `data:image/svg+xml;base64,${qrImage}`;
+        if (typeof qrImage === 'string') {
+          if (!qrImage.startsWith('data:')) {
+            result.data.qr_image = `data:image/svg+xml;base64,${qrImage}`;
+          }
+          console.log('标准格式二维码处理成功');
         }
       } 
       // 处理简单响应格式
       else if (result.qr_image) {
+        console.log('处理简单响应格式二维码');
         const qrImage = result.qr_image;
-        if (typeof qrImage === 'string' && !qrImage.startsWith('data:')) {
-          result.qr_image = `data:image/svg+xml;base64,${qrImage}`;
+        if (typeof qrImage === 'string') {
+          if (!qrImage.startsWith('data:')) {
+            result.qr_image = `data:image/svg+xml;base64,${qrImage}`;
+          }
+          console.log('简单格式二维码处理成功');
         }
+      }
+      // 处理直接返回字符串的情况
+      else if (typeof response.data === 'string') {
+        console.log('处理字符串格式二维码');
+        const qrImage = response.data;
+        if (!qrImage.startsWith('data:')) {
+          // 如果是Base64编码的图片数据
+          result = {
+            success: true,
+            qr_image: `data:image/svg+xml;base64,${qrImage}`
+          };
+        } else {
+          // 如果已经是data:URL格式
+          result = {
+            success: true,
+            qr_image: qrImage
+          };
+        }
+        console.log('字符串格式二维码处理成功');
       }
     }
     
+    console.log('最终二维码处理结果:', {
+      success: result.success,
+      hasQrImage: result.qr_image ? '有' : '无',
+      hasData: result.data ? '有' : '无',
+      hasDataQrImage: result.data?.qr_image ? '有' : '无'
+    });
+    
     return result;
   } catch (error) {
+    console.error('二维码API调用异常:', error);
     if (axios.isAxiosError(error)) {
       if (error.code === 'ECONNABORTED') {
         // 超时错误
@@ -159,6 +197,7 @@ export const getTotpQrImage = async (username: string) => {
         };
       } else if (error.response) {
         // 服务器返回错误
+        console.error('服务器错误:', error.response.status, error.response.data);
         return {
           success: false,
           message: error.response.data?.message || `服务器错误 (${error.response.status})`

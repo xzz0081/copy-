@@ -18,6 +18,7 @@ const Login: React.FC = () => {
   const [showTotpSetup, setShowTotpSetup] = useState(false);
   const [isQrLoading, setIsQrLoading] = useState(false);
   const [qrLoaded, setQrLoaded] = useState(false);
+  const [qrError, setQrError] = useState<string | null>(null);
 
   // 如果已认证，跳转到主页
   useEffect(() => {
@@ -30,47 +31,79 @@ const Login: React.FC = () => {
   const fetchTotpQrImage = useCallback(async (username: string) => {
     if (!username || isQrLoading || qrLoaded) return;
     setIsQrLoading(true);
+    setQrError(null);
     try {
+      console.log('获取TOTP二维码开始:', username);
       const response = await getTotpQrImage(username);
-      let qrImage = null;
-      if (response && response.success) {
-        if ('data' in response && response.data && typeof response.data.qr_image === 'string') {
+      console.log('TOTP二维码响应:', response);
+      
+      let qrImage: string | null = null;
+      
+      // 使用类型守卫确保类型安全
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
+        // 检查data.qr_image (标准响应格式)
+        if ('data' in response && 
+            response.data && 
+            typeof response.data === 'object' && 
+            'qr_image' in response.data && 
+            typeof response.data.qr_image === 'string') {
           qrImage = response.data.qr_image;
-        } else if ('qr_image' in response && typeof response.qr_image === 'string') {
+          console.log('从data.qr_image获取二维码');
+        } 
+        // 检查qr_image (简单响应格式)
+        else if ('qr_image' in response && typeof response.qr_image === 'string') {
           qrImage = response.qr_image;
-        } else if ('data' in response && typeof response.data === 'string') {
-          if (response.data.startsWith('data:')) {
-            qrImage = response.data;
-          }
+          console.log('从qr_image获取二维码');
+        }
+        // 检查data是否直接是字符串
+        else if ('data' in response && typeof response.data === 'string') {
+          qrImage = response.data;
+          console.log('从data字符串获取二维码');
         }
       }
+      
       if (qrImage) {
+        console.log('成功获取到二维码数据');
         setTotpQrImage(qrImage);
         setShowTotpSetup(true);
         setQrLoaded(true);
+      } else {
+        console.error('获取二维码失败: 响应中没有有效的二维码数据');
+        setQrError('获取二维码失败，响应中没有有效的二维码数据');
       }
     } catch (error) {
-      console.error('获取TOTP二维码失败', error);
+      console.error('获取TOTP二维码异常:', error);
+      setQrError('获取二维码时发生错误，请刷新页面重试');
     } finally {
       setIsQrLoading(false);
     }
   }, [isQrLoading, qrLoaded]);
 
-  // 如果需要TOTP设置，获取二维码
+  // 如果需要TOTP设置或绑定，获取二维码
   useEffect(() => {
-    if (state.requiresTotp && state.username && !qrLoaded) {
+    // 检查条件并记录
+    console.log('二维码加载条件检查:', {
+      username: state.username,
+      qrLoaded,
+      requiresTotp: state.requiresTotp,
+      isBindingMode: state.isBindingMode
+    });
+    
+    if (state.username && !qrLoaded && (state.requiresTotp || state.isBindingMode)) {
+      console.log('触发二维码获取:', state.username);
       fetchTotpQrImage(state.username);
     }
-  }, [state.requiresTotp, state.username, fetchTotpQrImage, qrLoaded]);
+  }, [state.requiresTotp, state.isBindingMode, state.username, fetchTotpQrImage, qrLoaded]);
 
   // 重置二维码状态
   useEffect(() => {
-    if (!state.requiresTotp) {
+    if (!state.requiresTotp && !state.isBindingMode) {
       setTotpQrImage(null);
       setShowTotpSetup(false);
       setQrLoaded(false);
+      setQrError(null);
     }
-  }, [state.requiresTotp]);
+  }, [state.requiresTotp, state.isBindingMode]);
 
   // 处理输入变化
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,6 +123,7 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
+    console.log('提交登录表单:', credentials);
     await login(credentials);
   };
 
@@ -97,6 +131,7 @@ const Login: React.FC = () => {
   const handleTotpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
+    console.log('提交TOTP验证:', { tempToken: state.tempToken, totpCode });
     if (state.tempToken) {
       const totpData: TotpVerifyRequest = {
         temp_token: state.tempToken,
@@ -152,40 +187,87 @@ const Login: React.FC = () => {
   // 渲染TOTP验证表单
   const renderTotpForm = () => (
     <form onSubmit={handleTotpSubmit} className="space-y-4">
-      {/* 只有首次绑定才显示二维码 */}
-      {state.isBindingMode && showTotpSetup && (
+      {/* 显示登录和二维码状态（调试用） */}
+      <div className="border border-gray-300 rounded p-2 mb-4 bg-gray-50">
+        <p className="text-xs text-gray-500">状态: {state.isBindingMode ? '首次绑定模式' : '验证模式'}</p>
+        <p className="text-xs text-gray-500">二维码加载: {isQrLoading ? '加载中' : (qrLoaded ? '已加载' : '未加载')}</p>
+        <p className="text-xs text-gray-500">二维码是否存在: {totpQrImage ? '存在' : '不存在'}</p>
+      </div>
+      
+      {/* 只有首次绑定时才显示二维码 */}
+      {state.isBindingMode && (
         <div className="mb-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">请输入两步验证码</h3>
-          {totpQrImage && (
+          <h3 className="text-lg font-medium text-gray-900 mb-2">设置两步验证</h3>
+          {isQrLoading ? (
+            <div className="flex flex-col items-center justify-center p-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
+              <p className="text-gray-500">正在加载二维码，请稍候...</p>
+            </div>
+          ) : totpQrImage ? (
             <>
               <p className="text-sm text-gray-600 mb-4">
                 请使用谷歌验证器或其他TOTP应用扫描下方二维码设置您的两步验证。
               </p>
-              <div className="flex justify-center mb-4">
-                {isQrLoading ? (
-                  <div className="flex items-center justify-center h-[200px] w-[200px] border rounded">
-                    <p className="text-gray-500">加载中...</p>
-                  </div>
-                ) : (
+              <div className="flex flex-col items-center justify-center mb-4">
+                <div className="border-2 border-gray-300 p-2 rounded-md mb-2 bg-white">
                   <img 
                     src={totpQrImage} 
                     alt="TOTP二维码" 
-                    className="max-w-full h-auto border rounded"
+                    className="max-w-full h-auto"
                     style={{ maxWidth: '200px' }}
+                    onError={(e) => {
+                      console.error('二维码图片加载失败');
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBmaWxsPSJub25lIiBkPSJNMCAwaDI0djI0SDBWMHoiLz48cGF0aCBkPSJNMTEgMThoMnYtMmgtMnYyem0xLTE2QzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQxIDAtOC0zLjU5LTgtOHMzLjU5LTggOC04IDggMy41OSA4IDgtMy41OSA4LTggOHptMC0xNGMtMi4yMSAwLTQgMS43OS00IDRoMmMwLTEuMS45LTIgMi0ycy4yLjkgMiAyYzAgMi0zIDEuNzUtMyA1aDJjMC0yLjI1IDMtMi41IDMtNSAwLTIuMjEtMS43OS00LTQtNHoiIGZpbGw9IiM5OTk5OTkiLz48L3N2Zz4=';
+                    }}
                   />
-                )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQrLoaded(false);
+                    fetchTotpQrImage(state.username || '');
+                  }}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 mt-2"
+                >
+                  重新加载二维码
+                </button>
               </div>
               <p className="text-sm text-gray-500">
-                设置完成后，输入应用生成的6位验证码。
+                设置完成后，输入应用生成的6位验证码完成绑定。
               </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-red-500 mb-4">
+                {qrError || '二维码加载失败，请点击下方按钮重试。'}
+              </p>
+              <div className="flex justify-center mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQrLoaded(false);
+                    fetchTotpQrImage(state.username || '');
+                  }}
+                  className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200"
+                >
+                  重新加载二维码
+                </button>
+              </div>
             </>
           )}
         </div>
       )}
+      {!state.isBindingMode && (
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          输入验证码
+        </h3>
+      )}
       {/* 验证码输入框始终显示 */}
       <div>
         <label htmlFor="totpCode" className="block text-sm font-medium text-gray-700">
-          验证码
+          {state.isBindingMode ? '6位验证码' : '验证码'}
         </label>
         <input
           type="text"
@@ -207,7 +289,7 @@ const Login: React.FC = () => {
           className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           disabled={state.loading}
         >
-          {state.loading ? '验证中...' : '验证'}
+          {state.loading ? '验证中...' : (state.isBindingMode ? '设置并验证' : '验证')}
         </button>
       </div>
     </form>
@@ -236,7 +318,7 @@ const Login: React.FC = () => {
           </div>
         )}
         
-        {state.requiresTotp ? renderTotpForm() : renderLoginForm()}
+        {(state.tempToken || state.requiresTotp || state.isBindingMode) ? renderTotpForm() : renderLoginForm()}
       </div>
     </div>
   );
