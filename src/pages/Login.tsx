@@ -29,32 +29,25 @@ const Login: React.FC = () => {
   // 获取TOTP二维码的方法
   const fetchTotpQrImage = useCallback(async (username: string) => {
     if (!username || isQrLoading || qrLoaded) return;
-    
     setIsQrLoading(true);
     try {
       const response = await getTotpQrImage(username);
-      if (response.success) {
-        // 尝试从响应中提取二维码图像
-        let qrImage = null;
-        
-        // 标准响应格式
-        if (response.data && response.data.qr_image) {
+      let qrImage = null;
+      if (response && response.success) {
+        if ('data' in response && response.data && typeof response.data.qr_image === 'string') {
           qrImage = response.data.qr_image;
-        } 
-        // 简单响应格式
-        else if (response.qr_image) {
+        } else if ('qr_image' in response && typeof response.qr_image === 'string') {
           qrImage = response.qr_image;
+        } else if ('data' in response && typeof response.data === 'string') {
+          if (response.data.startsWith('data:')) {
+            qrImage = response.data;
+          }
         }
-        // 直接数据
-        else if (typeof response.data === 'string' && response.data.startsWith('data:')) {
-          qrImage = response.data;
-        }
-        
-        if (qrImage) {
-          setTotpQrImage(qrImage);
-          setShowTotpSetup(true);
-          setQrLoaded(true);
-        }
+      }
+      if (qrImage) {
+        setTotpQrImage(qrImage);
+        setShowTotpSetup(true);
+        setQrLoaded(true);
       }
     } catch (error) {
       console.error('获取TOTP二维码失败', error);
@@ -159,7 +152,8 @@ const Login: React.FC = () => {
   // 渲染TOTP验证表单
   const renderTotpForm = () => (
     <form onSubmit={handleTotpSubmit} className="space-y-4">
-      {showTotpSetup && (
+      {/* 只有首次绑定才显示二维码 */}
+      {state.isBindingMode && showTotpSetup && (
         <div className="mb-4">
           <h3 className="text-lg font-medium text-gray-900 mb-2">请输入两步验证码</h3>
           {totpQrImage && (
@@ -167,7 +161,6 @@ const Login: React.FC = () => {
               <p className="text-sm text-gray-600 mb-4">
                 请使用谷歌验证器或其他TOTP应用扫描下方二维码设置您的两步验证。
               </p>
-              
               <div className="flex justify-center mb-4">
                 {isQrLoading ? (
                   <div className="flex items-center justify-center h-[200px] w-[200px] border rounded">
@@ -182,7 +175,6 @@ const Login: React.FC = () => {
                   />
                 )}
               </div>
-              
               <p className="text-sm text-gray-500">
                 设置完成后，输入应用生成的6位验证码。
               </p>
@@ -190,7 +182,7 @@ const Login: React.FC = () => {
           )}
         </div>
       )}
-
+      {/* 验证码输入框始终显示 */}
       <div>
         <label htmlFor="totpCode" className="block text-sm font-medium text-gray-700">
           验证码
@@ -209,7 +201,6 @@ const Login: React.FC = () => {
           autoComplete="off"
         />
       </div>
-
       <div>
         <button
           type="submit"
