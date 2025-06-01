@@ -187,13 +187,6 @@ const Login: React.FC = () => {
   // 渲染TOTP验证表单
   const renderTotpForm = () => (
     <form onSubmit={handleTotpSubmit} className="space-y-4">
-      {/* 显示登录和二维码状态（调试用） */}
-      <div className="border border-gray-300 rounded p-2 mb-4 bg-gray-50">
-        <p className="text-xs text-gray-500">状态: {state.isBindingMode ? '首次绑定模式' : '验证模式'}</p>
-        <p className="text-xs text-gray-500">二维码加载: {isQrLoading ? '加载中' : (qrLoaded ? '已加载' : '未加载')}</p>
-        <p className="text-xs text-gray-500">二维码是否存在: {totpQrImage ? '存在' : '不存在'}</p>
-      </div>
-      
       {/* 只有首次绑定时才显示二维码 */}
       {state.isBindingMode && (
         <div className="mb-4">

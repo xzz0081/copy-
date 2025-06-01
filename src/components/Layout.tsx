@@ -122,13 +122,6 @@ export default function Layout() {
               <NavItem to="/special-wallets" icon={<Wallet className="h-5 w-5" />} text="专用钱包" />
               <NavItem to="/system-health" icon={<Activity className="h-5 w-5" />} text="系统健康" />
               <NavItem to="/auth-guide" icon={<ShieldCheck className="h-5 w-5" />} text="授权指南" />
-              <button
-                onClick={handleLogout}
-                className="mt-2 flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
-              >
-                <LogOut className="h-5 w-5" />
-                <span>退出登录</span>
-              </button>
               <div className="mt-4 h-80 overflow-hidden border-t border-gray-700 pt-4">
                 <h3 className="mb-2 px-3 text-sm font-medium">实时交易记录</h3>
                 <div className="h-72 overflow-y-auto">
@@ -148,13 +141,6 @@ export default function Layout() {
             <NavItem to="/special-wallets" icon={<Wallet className="h-5 w-5" />} text="专用钱包" />
             <NavItem to="/system-health" icon={<Activity className="h-5 w-5" />} text="系统健康" />
             <NavItem to="/auth-guide" icon={<ShieldCheck className="h-5 w-5" />} text="授权指南" />
-            <button
-              onClick={handleLogout}
-              className="mt-2 flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
-            >
-              <LogOut className="h-5 w-5" />
-              <span>退出登录</span>
-            </button>
             <div className="mt-4 h-80 overflow-hidden border-t border-gray-700 pt-4">
               <h3 className="mb-2 px-3 text-sm font-medium">实时交易记录</h3>
               <div className="h-72 overflow-y-auto">
